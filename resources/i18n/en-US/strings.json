@@ -1,0 +1,242 @@
+{
+  "app": {
+    "title": "Switch-NewPipe",
+    "home": "Home",
+    "search": "Search",
+    "subscriptions": "Subscriptions",
+    "library": "Library",
+    "settings": "Settings",
+    "info_body": "Switch-NewPipe\n\nReal YouTube home, search, subscriptions, related feeds, channel navigation, and on-device playback are connected.\nYou can change playback quality, startup tab, default home category, short-video filtering, and language in Settings.",
+    "playback_failed": "Playback failed: {}"
+  },
+  "hints": {
+    "ok": "OK",
+    "cancel": "Cancel",
+    "back": "Back",
+    "exit": "Exit",
+    "exit_hint": "You will exit this app",
+    "open": "Open",
+    "on": "On",
+    "off": "Off",
+    "delete": "Delete",
+    "save": "Save",
+    "input": "Please input...",
+    "submit": "Submit"
+  },
+  "common": {
+    "close": "Close",
+    "info": "Info",
+    "none": "None",
+    "refresh": "Refresh",
+    "service_init_failed": "Service init failed: {}",
+    "count_with_title": "{} • {} items"
+  },
+  "home": {
+    "category_action": "Category",
+    "preparing": "Preparing home feed",
+    "no_kiosk": "No kiosk available",
+    "load_failed": "Unable to load home feed"
+  },
+  "search": {
+    "action": "Search",
+    "ime_title": "Enter search query",
+    "ime_subtitle": "Video or channel",
+    "prompt": "Press X to search",
+    "no_results": "No results for \"{}\"",
+    "results_count": "\"{}\" • {} items"
+  },
+  "subscriptions": {
+    "session_action": "Session",
+    "session_load_failed": "Session load failed",
+    "session_load_failed_body": "Delete the saved session file and import it again, or press RB to enter a new cookie.",
+    "feed_load_failed": "Unable to load subscriptions feed",
+    "feed_load_failed_body": "A session is saved, but YouTube did not return the feed.\nTry re-importing the auth file with RB or using cookies from a different account.",
+    "current_source": "Current source:\n{}",
+    "session_prefix": "Session: {}",
+    "controls": "A Play • Y Info • X Refresh • RB Session",
+    "signed_out_title": "Login session required",
+    "signed_out_body": "Press RB to open session management, then import an auth file or paste cookies directly.\n\nDefault import path:\n{}\n\nSupported formats:\nCookie header\nJSON {{\"cookie_header\":\"...\"}}\nNetscape cookies.txt",
+    "session_dialog": {
+      "saved": "A login session is already stored.\n\nSession source: {}",
+      "signed_out": "No login session is stored.\n\nDefault auth file path:\n{}",
+      "load_file": "Load File",
+      "input_cookie": "Paste Cookie",
+      "ime_title": "Paste cookie",
+      "ime_subtitle": "Cookie header or one-line JSON",
+      "logout": "Log Out",
+      "load_file_done": "Imported auth file",
+      "load_file_failed": "Failed to import auth file",
+      "logout_done": "Deleted login session",
+      "logout_failed": "Logout failed",
+      "empty_input": "Ignored empty input",
+      "save_cookie_done": "Saved cookie session",
+      "save_cookie_failed": "Failed to save cookie session"
+    }
+  },
+  "library": {
+    "section_action": "Section",
+    "clear_action": "Clear",
+    "favorites": "Favorites",
+    "history": "History",
+    "favorites_empty": "RB clears this section, and LB switches to history.\nNo favorites have been saved yet.",
+    "history_empty": "Videos you play will appear here.\nLB switches to favorites, and RB clears this section.",
+    "controls": "A Play • Y Details • X Refresh • LB Switch Section • RB Clear",
+    "clear_failed": "Failed to clear library",
+    "favorites_cleared": "Cleared favorites",
+    "history_cleared": "Cleared history"
+  },
+  "settings": {
+    "reset_action": "Defaults",
+    "reset_failed": "Failed to reset settings",
+    "reset_done": "Restored default settings",
+    "language": {
+      "title": "Language",
+      "save_failed": "Failed to save language",
+      "saved": "Language saved. Restart the app to apply it everywhere.",
+      "options": {
+        "auto": "System Default",
+        "korean": "Korean",
+        "english": "English"
+      }
+    },
+    "playback_quality": {
+      "title": "Playback quality",
+      "save_failed": "Failed to save playback quality",
+      "saved": "Saved playback quality",
+      "options": {
+        "standard": "Standard 720p",
+        "compatibility": "Compatibility First",
+        "data_saver": "Data Saver"
+      }
+    },
+    "startup_tab": {
+      "title": "Startup tab",
+      "save_failed": "Failed to save startup tab",
+      "saved": "Startup tab will change on next launch"
+    },
+    "home_kiosk": {
+      "title": "Default home category",
+      "save_failed": "Failed to save home category",
+      "saved": "Applies on the next home refresh",
+      "options": {
+        "recommended": "Recommended",
+        "live": "Live",
+        "music": "Music",
+        "gaming": "Gaming"
+      }
+    },
+    "hide_shorts": {
+      "title": "Hide short videos",
+      "save_failed": "Failed to save short-video setting",
+      "enabled": "Short videos will be hidden",
+      "disabled": "Short videos will be shown again"
+    },
+    "session": {
+      "title": "Login session",
+      "load_failed": "Failed to load session",
+      "saved": "Saved",
+      "signed_out": "Not signed in",
+      "dialog": {
+        "load_failed": "Failed to load session\n\n{}",
+        "signed_out": "No saved login session.\n\nOpen the Subscriptions tab and press RB to import cookies.",
+        "saved": "A login session is stored.\n\nDisplay name: {}\nSession file: {}",
+        "source": "Source: {}"
+      }
+    },
+    "storage": {
+      "title": "Storage paths",
+      "detail": "Settings / session / library files",
+      "dialog": {
+        "body": "Settings file:\n{}\n\nLogin session:\n{}\n\nCookie import:\n{}\n\nLibrary:\n{}"
+      }
+    }
+  },
+  "detail": {
+    "play_action": "Play",
+    "channel_action": "Channel",
+    "related_action": "Related",
+    "more_action": "More",
+    "favorite_action": "Favorite",
+    "unfavorite_action": "Unfavorite",
+    "default_title": "Video details",
+    "no_description": "No description available yet.",
+    "status_play": "A Play",
+    "status_channel": " • X Channel",
+    "status_related": " • Y Related",
+    "status_more": " • LB More",
+    "status_comments": " • LB Comments",
+    "status_favorite": " • RB Favorite",
+    "playback_url_failed": "Could not build playback URL",
+    "channel_load_failed": "Unable to load channel videos",
+    "related_load_failed": "Unable to load related videos",
+    "extras_title": "Extra actions",
+    "playlist_action": "Playlist",
+    "comments_action": "Comments",
+    "playlist_load_failed": "Unable to load playlist",
+    "comments_load_failed": "Unable to load comments",
+    "favorite_save_failed": "Failed to save favorite",
+    "favorite_added": "Added to favorites",
+    "favorite_removed": "Removed from favorites"
+  },
+  "feed": {
+    "subtitle": "A Play • Y Details • B Back"
+  },
+  "comments": {
+    "title": "Comments",
+    "subtitle": "B Back",
+    "verified": "Verified",
+    "unknown_author": "Unknown user",
+    "likes": "Likes {}",
+    "replies": "Replies {}"
+  },
+  "player": {
+    "status": {
+      "paused": "PAUSED",
+      "live": "LIVE",
+      "playing": "PLAYING",
+      "volume": "VOL"
+    },
+    "osd_controls": "A PAUSE  B BACK  X Y OSD  UP DOWN VOL",
+    "osd": {
+      "auto": "OSD AUTO",
+      "locked": "OSD LOCKED",
+      "audio_download_failed": "AUDIO DOWNLOAD FAILED",
+      "audio_attach_failed": "AUDIO ATTACH FAILED",
+      "playback_ready": "PLAYBACK READY",
+      "volume": "VOLUME {}"
+    },
+    "loading": {
+      "preparing_playback": "PREPARING PLAYBACK",
+      "opening_media_stream": "OPENING MEDIA STREAM",
+      "waiting_for_mpv_load": "WAITING FOR MPV LOAD",
+      "opening_direct_media": "OPENING DIRECT MEDIA",
+      "non_youtube_url": "NON-YOUTUBE URL",
+      "direct_stream_ready": "DIRECT STREAM READY",
+      "opening_live_stream": "OPENING LIVE STREAM",
+      "direct_playback": "DIRECT PLAYBACK",
+      "direct_dash_playback": "DIRECT DASH PLAYBACK",
+      "downloading_video_data": "DOWNLOADING VIDEO DATA",
+      "received": "RECEIVED",
+      "starting_transfer": "STARTING TRANSFER",
+      "initial_buffer_ready": "INITIAL BUFFER READY",
+      "download_complete": "DOWNLOAD COMPLETE",
+      "attaching_audio_track": "ATTACHING AUDIO TRACK",
+      "stream_720_failed": "720P STREAM FAILED",
+      "fallback_safe_stream": "FALLING BACK TO SAFE STREAM",
+      "playback_started": "PLAYBACK STARTED",
+      "video_frame_ready": "VIDEO FRAME READY",
+      "reading_stream_buffer": "READING STREAM BUFFER",
+      "contacting_video_cdn": "CONTACTING VIDEO CDN",
+      "buffering_first_frame": "BUFFERING FIRST FRAME",
+      "following_playlist_redirect": "FOLLOWING PLAYLIST REDIRECT",
+      "resolving_youtube_stream": "RESOLVING YOUTUBE STREAM",
+      "contacting_player_api": "CONTACTING PLAYER API",
+      "selecting_playable_format": "SELECTING PLAYABLE FORMAT",
+      "requesting_720p_hls_stream": "REQUESTING 720P HLS STREAM",
+      "requesting_720p_avc_stream": "REQUESTING 720P AVC STREAM"
+    }
+  },
+  "stream": {
+    "live_badge": "LIVE"
+  }
+}

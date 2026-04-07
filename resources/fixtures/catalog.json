@@ -1,0 +1,152 @@
+{
+  "kiosks": [
+    {
+      "id": "Trending",
+      "title": "Trending",
+      "items": [
+        {
+          "id": "dQw4w9WgXcQ",
+          "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+          "title": "Rick Astley - Never Gonna Give You Up",
+          "channel_name": "Rick Astley",
+          "channel_url": "https://www.youtube.com/@RickAstleyYT",
+          "thumbnail_url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+          "duration_text": "3:33",
+          "view_count_text": "1.5B views",
+          "published_text": "15 years ago",
+          "playback_url": "https://samplelib.com/mp4/sample-5s.mp4",
+          "description": "A classic music video fixture used to validate list rendering, search, and detail dialogs in the Switch MVP."
+        },
+        {
+          "id": "aqz-KE-bpKQ",
+          "url": "https://www.youtube.com/watch?v=aqz-KE-bpKQ",
+          "title": "Big Buck Bunny 60fps 4K",
+          "channel_name": "Blender Foundation",
+          "channel_url": "https://www.youtube.com/@blenderfoundation",
+          "thumbnail_url": "https://i.ytimg.com/vi/aqz-KE-bpKQ/hqdefault.jpg",
+          "duration_text": "9:56",
+          "view_count_text": "52M views",
+          "published_text": "9 years ago",
+          "playback_url": "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4",
+          "description": "Open movie trailer content that is useful as a repeatable playback candidate for Switch development."
+        },
+        {
+          "id": "M7lc1UVf-VE",
+          "url": "https://www.youtube.com/watch?v=M7lc1UVf-VE",
+          "title": "YouTube Developers Live",
+          "channel_name": "Google for Developers",
+          "channel_url": "https://www.youtube.com/@GoogleDevelopers",
+          "thumbnail_url": "https://i.ytimg.com/vi/M7lc1UVf-VE/hqdefault.jpg",
+          "duration_text": "LIVE",
+          "view_count_text": "8.4K watching",
+          "published_text": "Live now",
+          "is_live": true,
+          "description": "Fixture item representing a live stream so the Switch UI can distinguish live content from VOD items."
+        },
+        {
+          "id": "ScMzIvxBSi4",
+          "url": "https://www.youtube.com/watch?v=ScMzIvxBSi4",
+          "title": "Placeholder Video",
+          "channel_name": "BenMarquezTX",
+          "channel_url": "https://www.youtube.com/@BenMarquezTX",
+          "thumbnail_url": "https://i.ytimg.com/vi/ScMzIvxBSi4/hqdefault.jpg",
+          "duration_text": "1:34",
+          "view_count_text": "12M views",
+          "published_text": "11 years ago",
+          "playback_url": "https://filesamples.com/samples/video/mp4/sample_640x360.mp4",
+          "description": "Public placeholder clip kept in fixtures to validate direct YouTube playback."
+        }
+      ]
+    },
+    {
+      "id": "trending_music",
+      "title": "Trending Music",
+      "items": [
+        {
+          "id": "JGwWNGJdvx8",
+          "url": "https://www.youtube.com/watch?v=JGwWNGJdvx8",
+          "title": "Ed Sheeran - Shape of You",
+          "channel_name": "Ed Sheeran",
+          "channel_url": "https://www.youtube.com/@EdSheeran",
+          "thumbnail_url": "https://i.ytimg.com/vi/JGwWNGJdvx8/hqdefault.jpg",
+          "duration_text": "4:24",
+          "view_count_text": "6.4B views",
+          "published_text": "9 years ago",
+          "playback_url": "https://samplelib.com/mp4/sample-10s.mp4",
+          "description": "Music kiosk fixture for the Switch home feed."
+        },
+        {
+          "id": "9bZkp7q19f0",
+          "url": "https://www.youtube.com/watch?v=9bZkp7q19f0",
+          "title": "PSY - GANGNAM STYLE",
+          "channel_name": "officialpsy",
+          "channel_url": "https://www.youtube.com/@officialpsy",
+          "thumbnail_url": "https://i.ytimg.com/vi/9bZkp7q19f0/hqdefault.jpg",
+          "duration_text": "4:13",
+          "view_count_text": "5.5B views",
+          "published_text": "13 years ago",
+          "playback_url": "https://samplelib.com/mp4/sample-15s.mp4",
+          "description": "High-profile catalog item used as a second music result."
+        },
+        {
+          "id": "RgKAFK5djSk",
+          "url": "https://www.youtube.com/watch?v=RgKAFK5djSk",
+          "title": "Wiz Khalifa - See You Again ft. Charlie Puth",
+          "channel_name": "Wiz Khalifa",
+          "channel_url": "https://www.youtube.com/@wizkhalifa",
+          "thumbnail_url": "https://i.ytimg.com/vi/RgKAFK5djSk/hqdefault.jpg",
+          "duration_text": "3:58",
+          "view_count_text": "6.2B views",
+          "published_text": "10 years ago",
+          "playback_url": "https://samplelib.com/mp4/sample-20s.mp4",
+          "description": "Music search and home fixture item."
+        }
+      ]
+    },
+    {
+      "id": "trending_gaming",
+      "title": "Trending Gaming",
+      "items": [
+        {
+          "id": "2g811Eo7K8U",
+          "url": "https://www.youtube.com/watch?v=2g811Eo7K8U",
+          "title": "Nintendo Direct Highlights",
+          "channel_name": "Nintendo of America",
+          "channel_url": "https://www.youtube.com/@NintendoAmerica",
+          "thumbnail_url": "https://i.ytimg.com/vi/2g811Eo7K8U/hqdefault.jpg",
+          "duration_text": "27:41",
+          "view_count_text": "3.4M views",
+          "published_text": "2 weeks ago",
+          "playback_url": "https://archive.org/download/ElephantsDream/ed_1024_512kb.mp4",
+          "description": "Gaming kiosk fixture item tuned to the Switch use case."
+        },
+        {
+          "id": "3fumBcKC6RE",
+          "url": "https://www.youtube.com/watch?v=3fumBcKC6RE",
+          "title": "The Legend of Zelda Gameplay Showcase",
+          "channel_name": "Nintendo UK",
+          "channel_url": "https://www.youtube.com/@NintendoUK",
+          "thumbnail_url": "https://i.ytimg.com/vi/3fumBcKC6RE/hqdefault.jpg",
+          "duration_text": "14:02",
+          "view_count_text": "1.9M views",
+          "published_text": "1 month ago",
+          "playback_url": "https://download.blender.org/durian/trailer/sintel_trailer-720p.mp4",
+          "description": "Gaming showcase item used to validate kiosk switching."
+        },
+        {
+          "id": "eBGIQ7ZuuiU",
+          "url": "https://www.youtube.com/watch?v=eBGIQ7ZuuiU",
+          "title": "Minecraft Live Recap",
+          "channel_name": "Minecraft",
+          "channel_url": "https://www.youtube.com/@Minecraft",
+          "thumbnail_url": "https://i.ytimg.com/vi/eBGIQ7ZuuiU/hqdefault.jpg",
+          "duration_text": "18:20",
+          "view_count_text": "2.7M views",
+          "published_text": "4 days ago",
+          "playback_url": "https://archive.org/download/SampleVideo1280x7205mb/SampleVideo_1280x720_5mb.mp4",
+          "description": "Gaming-oriented VOD fixture."
+        }
+      ]
+    }
+  ]
+}

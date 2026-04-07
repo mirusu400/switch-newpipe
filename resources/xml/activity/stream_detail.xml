@@ -1,0 +1,60 @@
+<brls:AppletFrame
+    headerHidden="true"
+    footerHidden="false">
+    <brls:Box
+        width="100%"
+        height="100%"
+        axis="column"
+        paddingTop="20"
+        paddingLeft="20"
+        paddingRight="20">
+
+        <brls:Label
+            id="detail/title"
+            width="auto"
+            height="auto"
+            text="영상 정보"
+            fontSize="24"
+            textColor="#FFFFFF"
+            marginBottom="8" />
+
+        <brls:Label
+            id="detail/meta"
+            width="auto"
+            height="auto"
+            text=""
+            fontSize="16"
+            textColor="#D0D0D0"
+            marginBottom="8" />
+
+        <brls:Label
+            id="detail/status"
+            width="auto"
+            height="auto"
+            text="A 재생 · X 채널 · Y 연관 · LB 더보기 · RB 즐겨찾기"
+            fontSize="16"
+            textColor="#B0B0B0"
+            marginBottom="10" />
+
+        <brls:ProgressSpinner
+            id="detail/spinner"
+            width="auto"
+            height="80"
+            visibility="gone" />
+
+        <brls:ScrollingFrame
+            width="auto"
+            grow="1.0">
+
+            <brls:Label
+                id="detail/body"
+                width="auto"
+                height="auto"
+                lineHeight="28"
+                text=""
+                fontSize="18"
+                textColor="#F2F2F2" />
+
+        </brls:ScrollingFrame>
+    </brls:Box>
+</brls:AppletFrame>

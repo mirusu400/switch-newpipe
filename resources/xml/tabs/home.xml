@@ -1,0 +1,37 @@
+<brls:Box
+    width="auto"
+    height="auto"
+    axis="column"
+    paddingTop="20"
+    paddingLeft="20"
+    paddingRight="20">
+
+    <brls:Label
+        id="home/status"
+        width="auto"
+        height="auto"
+        text="Loading..."
+        fontSize="20"
+        textColor="#EAEAEA"
+        marginBottom="12" />
+
+    <brls:ProgressSpinner
+        id="home/spinner"
+        width="auto"
+        height="80"
+        visibility="gone" />
+
+    <brls:ScrollingFrame
+        id="home/scroll"
+        width="auto"
+        grow="1.0">
+
+        <brls:Box
+            id="home/grid"
+            width="auto"
+            height="auto"
+            axis="column" />
+
+    </brls:ScrollingFrame>
+
+</brls:Box>

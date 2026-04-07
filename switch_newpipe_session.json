@@ -1,0 +1,6 @@
+{
+  "cookie_header": "SAPISID=fake_demo_value; SID=fake_sid; HSID=fake_hsid",
+  "display_name": "",
+  "source_label": "imported file",
+  "source_path": "/tmp/switch_newpipe_fake_auth.txt"
+}

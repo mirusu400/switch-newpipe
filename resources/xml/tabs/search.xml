@@ -1,0 +1,37 @@
+<brls:Box
+    width="auto"
+    height="auto"
+    axis="column"
+    paddingTop="20"
+    paddingLeft="20"
+    paddingRight="20">
+
+    <brls:Label
+        id="search/status"
+        width="auto"
+        height="auto"
+        text="X 버튼으로 검색"
+        fontSize="20"
+        textColor="#EAEAEA"
+        marginBottom="12" />
+
+    <brls:ProgressSpinner
+        id="search/spinner"
+        width="auto"
+        height="80"
+        visibility="gone" />
+
+    <brls:ScrollingFrame
+        id="search/scroll"
+        width="auto"
+        grow="1.0">
+
+        <brls:Box
+            id="search/grid"
+            width="auto"
+            height="auto"
+            axis="column" />
+
+    </brls:ScrollingFrame>
+
+</brls:Box>

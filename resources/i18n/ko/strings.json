@@ -1,0 +1,242 @@
+{
+  "app": {
+    "title": "Switch-NewPipe",
+    "home": "홈",
+    "search": "검색",
+    "subscriptions": "구독",
+    "library": "라이브러리",
+    "settings": "설정",
+    "info_body": "Switch-NewPipe\n\n실제 YouTube 홈, 검색, 구독, 연관 피드, 채널 탐색과 실기 재생 경로가 연결되어 있습니다.\n설정에서 재생 품질, 시작 탭, 기본 홈 카테고리, 짧은 영상 필터, 언어를 바꿀 수 있습니다.",
+    "playback_failed": "재생 실패: {}"
+  },
+  "hints": {
+    "ok": "확인",
+    "cancel": "취소",
+    "back": "뒤로",
+    "exit": "종료",
+    "exit_hint": "이 앱을 종료합니다",
+    "open": "열기",
+    "on": "켜짐",
+    "off": "꺼짐",
+    "delete": "삭제",
+    "save": "저장",
+    "input": "입력해주세요...",
+    "submit": "확인"
+  },
+  "common": {
+    "close": "닫기",
+    "info": "정보",
+    "none": "없음",
+    "refresh": "새로고침",
+    "service_init_failed": "서비스 초기화 실패: {}",
+    "count_with_title": "{} • {}개"
+  },
+  "home": {
+    "category_action": "카테고리",
+    "preparing": "홈 피드를 준비 중입니다",
+    "no_kiosk": "표시할 kiosk가 없습니다",
+    "load_failed": "홈 피드를 불러올 수 없습니다"
+  },
+  "search": {
+    "action": "검색",
+    "ime_title": "검색어 입력",
+    "ime_subtitle": "영상 또는 채널",
+    "prompt": "X 버튼으로 검색",
+    "no_results": "\"{}\" 결과 없음",
+    "results_count": "\"{}\" • {}개"
+  },
+  "subscriptions": {
+    "session_action": "세션",
+    "session_load_failed": "세션 로드 실패",
+    "session_load_failed_body": "세션 파일을 지우고 다시 가져오거나 RB로 새 쿠키를 입력하세요.",
+    "feed_load_failed": "구독 피드를 불러오지 못했습니다",
+    "feed_load_failed_body": "세션은 저장되어 있지만 YouTube가 피드를 돌려주지 않았습니다.\nRB로 인증 파일을 다시 불러오거나 다른 계정 쿠키를 넣어보세요.",
+    "current_source": "현재 소스:\n{}",
+    "session_prefix": "세션: {}",
+    "controls": "A 재생 • Y 정보 • X 새로고침 • RB 세션",
+    "signed_out_title": "로그인 세션 필요",
+    "signed_out_body": "RB로 세션 관리 화면을 열고 인증 파일을 불러오거나 쿠키를 직접 입력하세요.\n\n기본 import 경로:\n{}\n\n지원 형식:\nCookie header\nJSON {{\"cookie_header\":\"...\"}}\nNetscape cookies.txt",
+    "session_dialog": {
+      "saved": "저장된 로그인 세션이 있습니다.\n\n세션 소스: {}",
+      "signed_out": "로그인 세션이 없습니다.\n\n기본 인증 파일 경로:\n{}",
+      "load_file": "파일 불러오기",
+      "input_cookie": "쿠키 입력",
+      "ime_title": "쿠키 입력",
+      "ime_subtitle": "Cookie header 또는 JSON 한 줄",
+      "logout": "로그아웃",
+      "load_file_done": "인증 파일을 불러왔습니다",
+      "load_file_failed": "인증 파일 로드 실패",
+      "logout_done": "로그인 세션을 삭제했습니다",
+      "logout_failed": "로그아웃 실패",
+      "empty_input": "빈 입력은 무시했습니다",
+      "save_cookie_done": "쿠키 세션을 저장했습니다",
+      "save_cookie_failed": "쿠키 저장 실패"
+    }
+  },
+  "library": {
+    "section_action": "섹션",
+    "clear_action": "비우기",
+    "favorites": "즐겨찾기",
+    "history": "최근 시청",
+    "favorites_empty": "RB는 현재 섹션 비우기, LB는 최근 시청으로 전환입니다.\n아직 저장된 즐겨찾기가 없습니다.",
+    "history_empty": "영상을 재생하면 여기에 쌓입니다.\nLB는 즐겨찾기 전환, RB는 현재 섹션 비우기입니다.",
+    "controls": "A 재생 • Y 상세 • X 새로고침 • LB 섹션 전환 • RB 비우기",
+    "clear_failed": "라이브러리 초기화 실패",
+    "favorites_cleared": "즐겨찾기를 비웠습니다",
+    "history_cleared": "최근 시청을 비웠습니다"
+  },
+  "settings": {
+    "reset_action": "기본값",
+    "reset_failed": "설정 초기화 실패",
+    "reset_done": "설정을 기본값으로 되돌렸습니다",
+    "language": {
+      "title": "언어",
+      "save_failed": "언어 저장 실패",
+      "saved": "언어를 저장했습니다. 앱을 다시 실행하면 전체에 반영됩니다.",
+      "options": {
+        "auto": "시스템 기본값",
+        "korean": "한국어",
+        "english": "영어"
+      }
+    },
+    "playback_quality": {
+      "title": "재생 품질",
+      "save_failed": "재생 품질 저장 실패",
+      "saved": "재생 품질 설정을 저장했습니다",
+      "options": {
+        "standard": "표준 720p",
+        "compatibility": "호환성 우선",
+        "data_saver": "데이터 절약"
+      }
+    },
+    "startup_tab": {
+      "title": "시작 탭",
+      "save_failed": "시작 탭 저장 실패",
+      "saved": "다음 실행부터 시작 탭이 바뀝니다"
+    },
+    "home_kiosk": {
+      "title": "기본 홈 카테고리",
+      "save_failed": "홈 카테고리 저장 실패",
+      "saved": "다음 홈 새로고침부터 반영됩니다",
+      "options": {
+        "recommended": "추천",
+        "live": "라이브",
+        "music": "음악",
+        "gaming": "게임"
+      }
+    },
+    "hide_shorts": {
+      "title": "짧은 영상 숨기기",
+      "save_failed": "짧은 영상 설정 저장 실패",
+      "enabled": "짧은 영상을 숨깁니다",
+      "disabled": "짧은 영상을 다시 표시합니다"
+    },
+    "session": {
+      "title": "로그인 세션",
+      "load_failed": "세션 로드 실패",
+      "saved": "저장됨",
+      "signed_out": "로그인 안 됨",
+      "dialog": {
+        "load_failed": "세션 로드 실패\n\n{}",
+        "signed_out": "저장된 로그인 세션이 없습니다.\n\n구독 탭에서 RB를 눌러 쿠키를 불러오세요.",
+        "saved": "세션이 저장되어 있습니다.\n\n표시 이름: {}\n세션 파일: {}",
+        "source": "원본: {}"
+      }
+    },
+    "storage": {
+      "title": "저장 위치",
+      "detail": "설정/세션/라이브러리 파일",
+      "dialog": {
+        "body": "설정 파일:\n{}\n\n로그인 세션:\n{}\n\n쿠키 import:\n{}\n\n라이브러리:\n{}"
+      }
+    }
+  },
+  "detail": {
+    "play_action": "재생",
+    "channel_action": "채널",
+    "related_action": "연관",
+    "more_action": "더보기",
+    "favorite_action": "즐겨찾기",
+    "unfavorite_action": "즐겨찾기 해제",
+    "default_title": "영상 정보",
+    "no_description": "설명이 아직 없습니다.",
+    "status_play": "A 재생",
+    "status_channel": " • X 채널",
+    "status_related": " • Y 연관",
+    "status_more": " • LB 더보기",
+    "status_comments": " • LB 댓글",
+    "status_favorite": " • RB 즐겨찾기",
+    "playback_url_failed": "재생 URL을 만들지 못했습니다",
+    "channel_load_failed": "채널 영상을 불러오지 못했습니다",
+    "related_load_failed": "연관 영상을 불러오지 못했습니다",
+    "extras_title": "상세 부가 기능",
+    "playlist_action": "재생목록",
+    "comments_action": "댓글",
+    "playlist_load_failed": "재생목록을 불러오지 못했습니다",
+    "comments_load_failed": "댓글을 불러오지 못했습니다",
+    "favorite_save_failed": "즐겨찾기 저장 실패",
+    "favorite_added": "즐겨찾기에 추가했습니다",
+    "favorite_removed": "즐겨찾기에서 제거했습니다"
+  },
+  "feed": {
+    "subtitle": "A 재생 • Y 상세 • B 뒤로"
+  },
+  "comments": {
+    "title": "댓글",
+    "subtitle": "B 뒤로",
+    "verified": "인증",
+    "unknown_author": "알 수 없는 사용자",
+    "likes": "좋아요 {}",
+    "replies": "답글 {}"
+  },
+  "player": {
+    "status": {
+      "paused": "일시정지",
+      "live": "라이브",
+      "playing": "재생 중",
+      "volume": "볼륨"
+    },
+    "osd_controls": "A 일시정지  B 뒤로  X Y OSD  위 아래 볼륨",
+    "osd": {
+      "auto": "OSD 자동",
+      "locked": "OSD 고정",
+      "audio_download_failed": "오디오 다운로드 실패",
+      "audio_attach_failed": "오디오 연결 실패",
+      "playback_ready": "재생 준비 완료",
+      "volume": "볼륨 {}"
+    },
+    "loading": {
+      "preparing_playback": "재생 준비 중",
+      "opening_media_stream": "미디어 스트림 여는 중",
+      "waiting_for_mpv_load": "MPV 로드 대기 중",
+      "opening_direct_media": "직접 미디어 여는 중",
+      "non_youtube_url": "유튜브 외 URL",
+      "direct_stream_ready": "직접 스트림 준비 완료",
+      "opening_live_stream": "라이브 스트림 여는 중",
+      "direct_playback": "직접 재생",
+      "direct_dash_playback": "직접 DASH 재생",
+      "downloading_video_data": "비디오 데이터 다운로드 중",
+      "received": "수신됨",
+      "starting_transfer": "전송 시작",
+      "initial_buffer_ready": "초기 버퍼 준비 완료",
+      "download_complete": "다운로드 완료",
+      "attaching_audio_track": "오디오 트랙 연결 중",
+      "stream_720_failed": "720P 스트림 실패",
+      "fallback_safe_stream": "안전 스트림으로 전환 중",
+      "playback_started": "재생 시작",
+      "video_frame_ready": "비디오 프레임 준비 완료",
+      "reading_stream_buffer": "스트림 버퍼 읽는 중",
+      "contacting_video_cdn": "비디오 CDN 연결 중",
+      "buffering_first_frame": "첫 프레임 버퍼링 중",
+      "following_playlist_redirect": "플레이리스트 리다이렉트 따라가는 중",
+      "resolving_youtube_stream": "유튜브 스트림 해석 중",
+      "contacting_player_api": "플레이어 API 연결 중",
+      "selecting_playable_format": "재생 가능한 포맷 선택 중",
+      "requesting_720p_hls_stream": "720P HLS 스트림 요청 중",
+      "requesting_720p_avc_stream": "720P AVC 스트림 요청 중"
+    }
+  },
+  "stream": {
+    "live_badge": "라이브"
+  }
+}

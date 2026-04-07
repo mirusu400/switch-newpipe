@@ -1,0 +1,59 @@
+<brls:AppletFrame
+        iconInterpolation="linear"
+        headerHidden="true"
+        footerHidden="false">
+    <brls:Box
+            axis="column"
+            width="100%"
+            height="100%">
+        <AutoTabFrame
+                id="main/tabs"
+                grow="1"
+                tabBackgroundColor="@theme/color/newpipe_bg"
+                tabItemActiveTextColor="@theme/color/newpipe"
+                defaultTab="0"
+                sidebarPosition="left"
+                sidebarWidth="160">
+
+            <Tab
+                    label="@i18n/app/home"
+                    fontSize="18"
+                    icon="@res/svg/home.svg"
+                    iconActivate="@res/svg/home_active.svg">
+                <HomeTab/>
+            </Tab>
+
+            <Tab
+                    label="@i18n/app/search"
+                    fontSize="18"
+                    icon="@res/svg/search.svg"
+                    iconActivate="@res/svg/search_active.svg">
+                <SearchTab/>
+            </Tab>
+
+            <Tab
+                    label="@i18n/app/subscriptions"
+                    fontSize="18"
+                    icon="@res/svg/subscriptions.svg"
+                    iconActivate="@res/svg/subscriptions_active.svg">
+                <SubscriptionsTab/>
+            </Tab>
+
+            <Tab
+                    label="@i18n/app/library"
+                    fontSize="18"
+                    icon="@res/svg/library.svg"
+                    iconActivate="@res/svg/library_active.svg">
+                <LibraryTab/>
+            </Tab>
+
+            <Tab
+                    label="@i18n/app/settings"
+                    fontSize="18"
+                    icon="@res/svg/settings.svg"
+                    iconActivate="@res/svg/settings_active.svg">
+                <SettingsTab/>
+            </Tab>
+        </AutoTabFrame>
+    </brls:Box>
+</brls:AppletFrame>

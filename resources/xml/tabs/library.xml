@@ -1,0 +1,47 @@
+<brls:Box
+    width="auto"
+    height="auto"
+    axis="column"
+    paddingTop="20"
+    paddingLeft="20"
+    paddingRight="20">
+
+    <brls:Label
+        id="library/status"
+        width="auto"
+        height="auto"
+        text="라이브러리"
+        fontSize="20"
+        textColor="#FFFFFF"
+        marginBottom="8" />
+
+    <brls:Label
+        id="library/body"
+        width="auto"
+        height="auto"
+        lineHeight="28"
+        text="LB 섹션 전환 · RB 비우기"
+        fontSize="18"
+        textColor="#D0D0D0"
+        marginBottom="12" />
+
+    <brls:ProgressSpinner
+        id="library/spinner"
+        width="auto"
+        height="80"
+        visibility="gone" />
+
+    <brls:ScrollingFrame
+        id="library/scroll"
+        width="auto"
+        grow="1.0">
+
+        <brls:Box
+            id="library/grid"
+            width="auto"
+            height="auto"
+            axis="column" />
+
+    </brls:ScrollingFrame>
+
+</brls:Box>
