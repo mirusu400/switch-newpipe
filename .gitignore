@@ -1,0 +1,52 @@
+# Build artifacts
+build/
+*.o
+*.d
+*.elf
+*.nro
+*.nacp
+*.map
+
+# Compiled libraries
+*.a
+*.so
+*.dylib
+*.dll
+*.lib
+
+# Switch screenshots / captures (root level)
+/*.jpg
+/*.png
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+reference/
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+cmake-build-*/
+
+# IDE
+.vscode/
+.idea/
+.cache/
+.build-libromfs-generator/
+
+# vcpkg
+vcpkg_installed/
+
+# Reference repos (large, external)
+reference/
+
+# OS
+.DS_Store
+Thumbs.db
