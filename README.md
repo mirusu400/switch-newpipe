@@ -134,10 +134,13 @@ Current limitation:
 
 - `reference/NewPipe`
   - upstream Android NewPipe reference
-- `reference/switchzzk`
-  - Switch Borealis + mpv + ffmpeg playback reference
+- ignored Switch playback reference app under `reference/`
+  - Borealis + mpv + ffmpeg playback structure reference
 - `reference/wiliwili`
   - Switch / cross-platform UI and playback reference
+
+The ignored `reference/` tree is optional and exists only for exploration.  
+Tracked build dependencies live under `vendor/borealis`, `vendor/lunasvg`, `vendor/third_party`, and `vendor/switch-portlibs`.
 
 ## Build
 

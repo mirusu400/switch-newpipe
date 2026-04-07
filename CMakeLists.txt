@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.15)
 
-set(BOREALIS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/reference/switchzzk/library/borealis)
+set(BOREALIS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vendor/borealis)
 set(BOREALIS_LIBRARY ${BOREALIS_DIR}/library)
-set(LUNASVG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/reference/switchzzk/library/lunasvg)
+set(LUNASVG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vendor/lunasvg)
 set(CMAKE_DISABLE_FIND_PACKAGE_DBus TRUE CACHE BOOL "Disable DBus for Switch builds" FORCE)
 set(LIBROMFS_PREBUILT_GENERATOR
     ${BOREALIS_DIR}/libromfs-generator
@@ -53,7 +53,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 17)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     include
-    reference/switchzzk/third_party
+    vendor/third_party
 )
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE

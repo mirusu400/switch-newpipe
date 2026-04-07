@@ -40,6 +40,7 @@ cmake-build-*/
 .idea/
 .cache/
 .build-libromfs-generator/
+/vendor/borealis/libromfs-generator
 
 # vcpkg
 vcpkg_installed/

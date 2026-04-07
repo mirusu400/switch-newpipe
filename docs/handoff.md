@@ -172,6 +172,7 @@
 ## 참고
 
 - `reference/NewPipe`: 기능 우선순위 기준
-- `reference/switchzzk`: Switch Borealis + mpv/ffmpeg 재생 구조 참고
+- `reference/` 아래의 무시된 Switch 재생 레퍼런스 앱: Borealis + mpv/ffmpeg 재생 구조 참고
 - `reference/wiliwili`: UI/플레이어 구조 참고
+- 실제 빌드 의존성은 `vendor/borealis`, `vendor/lunasvg`, `vendor/third_party`, `vendor/switch-portlibs`에 직접 vendoring 되어 있음
 - `docs/testing.md`: 실기 테스트 체크리스트

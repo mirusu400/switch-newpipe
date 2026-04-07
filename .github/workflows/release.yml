@@ -26,7 +26,7 @@ jobs:
           path: |
             .cache/portlibs-switch
             .build-libromfs-generator
-          key: ${{ runner.os }}-switch-portlibs-${{ hashFiles('build.sh', 'CMakeLists.txt', 'reference/switchzzk/scripts/switch/build_custom_portlibs.sh', 'reference/switchzzk/scripts/switch/ffmpeg/**', 'reference/switchzzk/scripts/switch/mpv/**') }}
+          key: ${{ runner.os }}-switch-portlibs-${{ hashFiles('build.sh', 'CMakeLists.txt', 'vendor/switch-portlibs/build_custom_portlibs.sh', 'vendor/switch-portlibs/ffmpeg/**', 'vendor/switch-portlibs/mpv/**') }}
 
       - name: Verify Docker
         run: docker version

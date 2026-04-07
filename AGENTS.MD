@@ -48,6 +48,7 @@
 
 ## 빌드 주의사항
 
+- 실제 빌드 의존성은 `vendor/borealis`, `vendor/lunasvg`, `vendor/third_party`, `vendor/switch-portlibs`에 vendoring 되어 있다
 - Switch 빌드는 Docker 경로를 기준으로 유지
 - Borealis와 SDL 윈도우는 동시에 살리지 않는다
 - `mpv log-file`에 `sdmc:/` 경로 직접 사용 금지

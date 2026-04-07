@@ -15,6 +15,8 @@
 
 ## Switch 빌드
 
+실제 빌드 의존성은 `vendor/borealis`, `vendor/lunasvg`, `vendor/third_party`, `vendor/switch-portlibs`에 vendoring 되어 있다.
+
 ```bash
 ./build.sh
 ```

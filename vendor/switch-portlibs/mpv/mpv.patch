@@ -1,0 +1,577 @@
+diff --git a/audio/decode/ad_spdif.c b/audio/decode/ad_spdif.c
+index decd97206d..e57843413f 100644
+--- a/audio/decode/ad_spdif.c
++++ b/audio/decode/ad_spdif.c
+@@ -53,7 +53,11 @@ struct spdifContext {
+     struct mp_decoder public;
+ };
+ 
++#if LIBAVCODEC_VERSION_MAJOR < 61
+ static int write_packet(void *p, uint8_t *buf, int buf_size)
++#else
++static int write_packet(void *p, const uint8_t *buf, int buf_size)
++#endif
+ {
+     struct spdifContext *ctx = p;
+ 
+diff --git a/audio/out/ao.c b/audio/out/ao.c
+index a5aa3a9402..6dd0ba6eb2 100644
+--- a/audio/out/ao.c
++++ b/audio/out/ao.c
+@@ -53,6 +53,7 @@ extern const struct ao_driver audio_out_wasapi;
+ extern const struct ao_driver audio_out_pcm;
+ extern const struct ao_driver audio_out_lavc;
+ extern const struct ao_driver audio_out_sdl;
++extern const struct ao_driver audio_out_hos;
+ 
+ static const struct ao_driver * const audio_out_drivers[] = {
+ // native:
+@@ -95,6 +96,9 @@ static const struct ao_driver * const audio_out_drivers[] = {
+ #endif
+ #if HAVE_SNDIO
+     &audio_out_sndio,
++#endif
++#if HAVE_HOS_AUDIO
++    &audio_out_hos,
+ #endif
+     &audio_out_null,
+ #if HAVE_COREAUDIO
+diff --git a/audio/out/ao_hos.c b/audio/out/ao_hos.c
+new file mode 100644
+index 0000000000..42d3793b91
+--- /dev/null
++++ b/audio/out/ao_hos.c
+@@ -0,0 +1,293 @@
++/*
++ * audio output driver for Horizon OS using audren
++ * Copyright (c) 2023 averne <averne381@gmail.com>
++ *
++ * This file is part of mpv.
++ *
++ * mpv is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * mpv is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with mpv.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <switch.h>
++
++#include "config.h"
++#include "common/common.h"
++#include "common/msg.h"
++#include "options/m_option.h"
++#include "audio/format.h"
++#include "ao.h"
++#include "internal.h"
++
++#define MAX_CHANS 6 // 5.1
++#define MAX_BUF 16
++#define MAX_SAMPLES 32768
++
++struct priv {
++    AudioDriver driver;
++    int num_buffers;
++    int num_samples;
++
++    void *pool;
++    AudioDriverWaveBuf *buffers;
++
++    int cur_buf_idx;
++    uint32_t cur_queued_samples, total_queued_samples;
++};
++
++static const AudioRendererConfig ar_config = {
++    .output_rate     = AudioRendererOutputRate_48kHz,
++    .num_voices      = MAX_CHANS,
++    .num_effects     = 0,
++    .num_sinks       = 1,
++    .num_mix_objs    = 1,
++    .num_mix_buffers = MAX_CHANS,
++};
++
++static const uint8_t sink_channel_ids[] = { 0, 1, 2, 3, 4, 5 };
++
++static const struct mp_chmap possible_channel_layouts[] = {
++    {0},
++    MP_CHMAP_INIT_MONO,                 // mono
++    MP_CHMAP_INIT_STEREO,               // stereo
++    MP_CHMAP3(FL, FR, LFE),             // 2.1
++    MP_CHMAP4(FL, FR, BL, BR),          // 4.0
++    MP_CHMAP5(FL, FR, FC, BL, BR),      // 5.0
++    MP_CHMAP6(FL, FR, FC, LFE, BL, BR), // 5.1
++};
++
++static int init(struct ao *ao) {
++    struct priv *priv = ao->priv;
++
++    Result rc;
++
++    MP_VERBOSE(ao, "Initializing hos audio\n");
++
++    ao->format   = AF_FORMAT_S16; // Only format supported by audrv with Adpcm which mpv can't output
++    ao->channels = possible_channel_layouts[MPMIN(ao->channels.num, MAX_CHANS)];
++
++    rc = audrenInitialize(&ar_config);
++    if (R_FAILED(rc))
++        return -rc;
++
++    rc = audrvCreate(&priv->driver, &ar_config, MAX_CHANS);
++    if (R_FAILED(rc))
++        return -rc;
++
++    size_t mempool_size = MP_ALIGN_UP(priv->num_samples * ao->channels.num *
++        priv->num_buffers * sizeof(int16_t), AUDREN_MEMPOOL_ALIGNMENT);
++
++    priv->pool = aligned_alloc(AUDREN_MEMPOOL_ALIGNMENT, mempool_size);
++    if (!priv->pool)
++        return -1;
++
++    priv->buffers = talloc_array(priv, AudioDriverWaveBuf, priv->num_buffers);
++    for (int i = 0; i < priv->num_buffers; ++i) {
++        priv->buffers[i] = (AudioDriverWaveBuf){
++            .data_raw            = priv->pool,
++            .size                = mempool_size,
++            .start_sample_offset = priv->num_samples * i,
++            .end_sample_offset   = priv->num_samples * (i + 1),
++        };
++    }
++
++    int mpid = audrvMemPoolAdd(&priv->driver, priv->pool, mempool_size);
++    audrvMemPoolAttach(&priv->driver, mpid);
++
++    ao->device_buffer = priv->num_buffers * priv->num_samples;
++
++    audrvDeviceSinkAdd(&priv->driver, AUDREN_DEFAULT_DEVICE_NAME, MAX_CHANS, sink_channel_ids);
++
++    rc = audrenStartAudioRenderer();
++    if (R_FAILED(rc))
++        return -rc;
++
++    audrvVoiceInit(&priv->driver, 0, ao->channels.num, PcmFormat_Int16, ao->samplerate);
++    audrvVoiceSetDestinationMix(&priv->driver, 0, AUDREN_FINAL_MIX_ID);
++
++    for (int i = 0; i < ao->channels.num; ++i)
++        audrvVoiceSetMixFactor(&priv->driver, 0, 1.0f, ao->channels.speaker[i], ao->channels.speaker[i]);
++
++    return 0;
++}
++
++static void uninit(struct ao *ao) {
++    struct priv *priv = ao->priv;
++
++    MP_VERBOSE(ao, "Deinitializing hos audio\n");
++
++    audrvVoiceStop(&priv->driver, 0);
++    audrvUpdate(&priv->driver);
++
++    audrvClose(&priv->driver);
++    audrenExit();
++
++    free(priv->pool);
++}
++
++static void reset(struct ao *ao) {
++    struct priv *priv = ao->priv;
++
++    priv->cur_buf_idx = -1;
++    priv->cur_queued_samples = priv->total_queued_samples = 0;
++    audrvVoiceStop(&priv->driver, 0);
++    audrvUpdate(&priv->driver);
++}
++
++static bool set_pause(struct ao *ao, bool paused) {
++    struct priv *priv = ao->priv;
++
++    audrvVoiceSetPaused(&priv->driver, 0, paused);
++    return R_SUCCEEDED(audrvUpdate(&priv->driver));
++}
++
++static void start(struct ao *ao) {
++    struct priv *priv = ao->priv;
++
++    audrvVoiceStart(&priv->driver, 0);
++    audrvUpdate(&priv->driver);
++}
++
++static int find_free_wavebuf(struct priv *priv) {
++    for (int i = 0; i < priv->num_buffers; ++i) {
++        AudioDriverWaveBuf *buf = &priv->buffers[i];
++        if (buf->state == AudioDriverWaveBufState_Done ||
++                buf->state == AudioDriverWaveBufState_Free)
++            return i;
++    }
++    return -1;
++}
++
++static bool audio_write(struct ao *ao, void **data, int samples) {
++    struct priv *priv = ao->priv;
++
++    // We requested a linear format so there is only one buffer
++    uint8_t *dat = data[0];
++
++    while (samples) {
++        int idx = (priv->cur_buf_idx != -1) ? priv->cur_buf_idx : find_free_wavebuf(priv);
++        if (idx == -1)
++            return false;
++        priv->cur_buf_idx = idx;
++
++        AudioDriverWaveBuf *buf = &priv->buffers[idx];
++        uint8_t *buf_offset = (uint8_t *)buf->data_raw + (idx * priv->num_samples * ao->sstride);
++
++        size_t num_samples = MPMIN(samples, priv->num_samples - priv->cur_queued_samples);
++
++        memcpy(buf_offset + priv->cur_queued_samples * ao->sstride, dat, num_samples * ao->sstride);
++        priv->cur_queued_samples   += num_samples;
++        priv->total_queued_samples += num_samples;
++
++        dat     += num_samples * ao->sstride;
++        samples -= num_samples;
++
++        // Append buffer once it's full
++        if (priv->cur_queued_samples >= priv->num_samples) {
++            armDCacheFlush(buf_offset, priv->num_samples * ao->sstride);
++            audrvVoiceAddWaveBuf(&priv->driver, 0, buf);
++            audrvUpdate(&priv->driver);
++
++            priv->cur_buf_idx = -1, priv->cur_queued_samples = 0;
++        }
++    }
++
++    return true;
++}
++
++static void get_state(struct ao *ao, struct mp_pcm_state *state) {
++    struct priv *priv = ao->priv;
++    audrvUpdate(&priv->driver);
++
++    state->free_samples = state->queued_samples = 0;
++    for (int i = 0; i < priv->num_buffers; ++i) {
++        AudioDriverWaveBuf *buf = &priv->buffers[i];
++        if (buf->state == AudioDriverWaveBufState_Free
++                || buf->state == AudioDriverWaveBufState_Done)
++            state->free_samples += priv->num_samples;
++    }
++
++    if (priv->cur_buf_idx != -1)
++        state->free_samples -= priv->num_samples - priv->cur_queued_samples;
++
++    state->queued_samples = priv->total_queued_samples -
++        audrvVoiceGetPlayedSampleCount(&priv->driver, 0);
++    state->delay = (double)state->queued_samples / ao->samplerate;
++    state->playing = audrvVoiceIsPlaying(&priv->driver, 0);
++}
++
++static int control(struct ao *ao, enum aocontrol cmd, void *arg) {
++    struct priv *priv = ao->priv;
++
++    int rc;
++
++    switch (cmd) {
++        case AOCONTROL_SET_MUTE:
++        case AOCONTROL_SET_VOLUME: {
++                float vol;
++                if (cmd == AOCONTROL_SET_MUTE) {
++                    bool in = *(bool *)arg;
++                    vol = !in;
++                } else {
++                    float *in = (float *)arg;
++                    vol = *in / 100.0f;
++                }
++
++                audrvMixSetVolume(&priv->driver, 0, vol);
++                rc = audrvUpdate(&priv->driver);
++            }
++            break;
++        case AOCONTROL_GET_MUTE:
++        case AOCONTROL_GET_VOLUME: {
++                rc = audrvUpdate(&priv->driver);
++                float vol = priv->driver.in_mixes[0].volume;
++                if (cmd == AOCONTROL_GET_MUTE) {
++                    bool *out = (bool *)arg;
++                    *out = !vol;
++                } else {
++                    float *out = (float *)arg;
++                    *out = vol * 100.0f;
++                }
++            }
++            break;
++        default:
++            return CONTROL_UNKNOWN;
++    }
++
++    return R_SUCCEEDED(rc) ? CONTROL_OK : CONTROL_ERROR;
++}
++
++#define OPT_BASE_STRUCT struct priv
++
++const struct ao_driver audio_out_hos = {
++    .description     = "HOS Audio",
++    .name            = "hos",
++    .init            = init,
++    .uninit          = uninit,
++    .reset           = reset,
++    .control         = control,
++    .set_pause       = set_pause,
++    .start           = start,
++    .write           = audio_write,
++    .get_state       = get_state,
++    .priv_size       = sizeof(struct priv),
++    .priv_defaults   = &(const struct priv){
++        .num_buffers = 4,
++        .num_samples = 8192,
++    },
++    .options         = (const struct m_option[]){
++        {"num-buffers", OPT_INT(num_buffers), M_RANGE(2,   MAX_BUF)},
++        {"num-samples", OPT_INT(num_samples), M_RANGE(256, MAX_SAMPLES)},
++        {0}
++    },
++    .options_prefix   = "ao-hos",
++};
+diff --git a/filters/f_lavfi.c b/filters/f_lavfi.c
+index 597cf91fc0..8bd96486ca 100644
+--- a/filters/f_lavfi.c
++++ b/filters/f_lavfi.c
+@@ -1024,7 +1024,11 @@ static const char *get_avopt_type_name(enum AVOptionType type)
+     case AV_OPT_TYPE_VIDEO_RATE:        return "fps";
+     case AV_OPT_TYPE_DURATION:          return "duration";
+     case AV_OPT_TYPE_COLOR:             return "color";
++#if LIBAVUTIL_VERSION_MAJOR < 59
+     case AV_OPT_TYPE_CHANNEL_LAYOUT:    return "channellayout";
++#else
++    case AV_OPT_TYPE_CHLAYOUT:          return "ch_layout";
++#endif
+     case AV_OPT_TYPE_BOOL:              return "bool";
+     case AV_OPT_TYPE_CONST: // fallthrough
+     default:
+diff --git a/filters/f_swresample.c b/filters/f_swresample.c
+index fb1ef05194..09148b5f88 100644
+--- a/filters/f_swresample.c
++++ b/filters/f_swresample.c
+@@ -23,6 +23,7 @@
+ #include <libswresample/swresample.h>
+ 
+ #include "audio/aframe.h"
++#include "audio/chmap_avchannel.h"
+ #include "audio/fmt-conversion.h"
+ #include "audio/format.h"
+ #include "common/common.h"
+@@ -269,14 +270,28 @@ static bool configure_lavrr(struct priv *p, bool verbose)
+ 
+     out_ch_layout = fudge_layout_conversion(p, in_ch_layout, out_ch_layout);
+ 
++#if HAVE_AV_CHANNEL_LAYOUT
+     // Real conversion; output is input to avrctx_out.
++    AVChannelLayout in_layout, out_layout;
++    mp_chmap_to_av_layout(&in_layout, &in_lavc);
++    mp_chmap_to_av_layout(&out_layout, &out_lavc);
++    av_opt_set_chlayout(p->avrctx, "in_chlayout",  &in_layout, 0);
++    av_opt_set_chlayout(p->avrctx, "out_chlayout", &out_layout, 0);
++#else
+     av_opt_set_int(p->avrctx, "in_channel_layout",  in_ch_layout, 0);
+     av_opt_set_int(p->avrctx, "out_channel_layout", out_ch_layout, 0);
++#endif
+     av_opt_set_int(p->avrctx, "in_sample_rate",     p->in_rate, 0);
+     av_opt_set_int(p->avrctx, "out_sample_rate",    p->out_rate, 0);
+     av_opt_set_int(p->avrctx, "in_sample_fmt",      in_samplefmt, 0);
+     av_opt_set_int(p->avrctx, "out_sample_fmt",     out_samplefmtp, 0);
+ 
++#if HAVE_AV_CHANNEL_LAYOUT
++    AVChannelLayout fake_layout;
++    av_channel_layout_default(&fake_layout, map_out.num);
++    av_opt_set_chlayout(p->avrctx_out, "in_chlayout", &fake_layout, 0);
++    av_opt_set_chlayout(p->avrctx_out, "out_chlayout", &fake_layout, 0);
++#else
+     // Just needs the correct number of channels for deplanarization.
+     struct mp_chmap fake_chmap;
+     mp_chmap_set_unknown(&fake_chmap, map_out.num);
+@@ -285,6 +300,7 @@ static bool configure_lavrr(struct priv *p, bool verbose)
+         goto error;
+     av_opt_set_int(p->avrctx_out, "in_channel_layout",  fake_out_ch_layout, 0);
+     av_opt_set_int(p->avrctx_out, "out_channel_layout", fake_out_ch_layout, 0);
++#endif
+ 
+     av_opt_set_int(p->avrctx_out, "in_sample_fmt",      out_samplefmtp, 0);
+     av_opt_set_int(p->avrctx_out, "out_sample_fmt",     out_samplefmt, 0);
+diff --git a/meson.build b/meson.build
+index f9fe4e7263..2fcaa509da 100644
+--- a/meson.build
++++ b/meson.build
+@@ -292,13 +292,16 @@ if cc.get_id() == 'clang'
+     flags += clang_flags
+ endif
+ 
++libnx = cc.find_library('nx', required: get_option('hos'))
++hos = libnx.found()
+ darwin = host_machine.system() == 'darwin'
+ win32 = host_machine.system() == 'cygwin' or host_machine.system() == 'windows'
+-posix = not win32
++posix = not win32 and not hos
+ 
+ features += {'darwin': darwin}
+ features += {'posix': posix}
+ features += {'dos-paths': win32, 'win32': win32}
++features += {'hos': hos}
+ 
+ mswin_flags = ['-D_WIN32_WINNT=0x0602', '-DUNICODE', '-DCOBJMACROS',
+                '-DINITGUID', '-U__STRICT_ANSI__']
+@@ -424,6 +427,19 @@ if posix and not darwin
+                      'osdep/timer-linux.c')
+ endif
+ 
++if hos
++    dependencies += libnx
++    sources += files('osdep/path-unix.c',
++                     'osdep/timer-linux.c',
++                     'osdep/subprocess-dummy.c',
++                     'osdep/terminal-dummy.c',
++                     'osdep/main-fn-unix.c',
++                     'osdep/language-posix.c',
++                     'input/ipc-dummy.c',
++                     'osdep/polldev.c',
++                     'sub/filter_regex.c')
++endif
++
+ cd_devices = {
+     'windows': 'D:',
+     'cygwin': 'D:',
+@@ -855,6 +871,15 @@ if features['sdl2-audio']
+     sources += files('audio/out/ao_sdl.c')
+ endif
+ 
++hos_audio = get_option('hos-audio').require(
++    features['hos'],
++    error_message: 'hos was not found!',
++)
++features += {'hos-audio': hos_audio.allowed()}
++if features['hos-audio']
++    sources += files('audio/out/ao_hos.c')
++endif
++
+ sndio = dependency('sndio', required: get_option('sndio'))
+ features += {'sndio': sndio.found()}
+ if features['sndio']
+diff --git a/meson_options.txt b/meson_options.txt
+index 5f2d31df3d..a334aabec8 100644
+--- a/meson_options.txt
++++ b/meson_options.txt
+@@ -38,6 +38,7 @@ option('vector', type: 'feature', value: 'auto', description: 'GCC vector instru
+ option('win32-internal-pthreads', type: 'feature', value: 'auto', description: 'internal pthread wrapper for win32 (Vista+)')
+ option('zimg', type: 'feature', value: 'auto', description: 'libzimg support (high quality software scaler)')
+ option('zlib', type: 'feature', value: 'auto', description: 'zlib')
++option('hos', type: 'feature', value: 'auto', description: 'HOS')
+ 
+ # audio output features
+ option('alsa', type: 'feature', value: 'auto', description: 'ALSA audio output')
+@@ -52,6 +53,7 @@ option('pulse', type: 'feature', value: 'auto', description: 'PulseAudio audio o
+ option('sdl2-audio', type: 'feature', value: 'auto', description: 'SDL2 audio output')
+ option('sndio', type: 'feature', value: 'auto', description: 'sndio audio output')
+ option('wasapi', type: 'feature', value: 'auto', description: 'WASAPI audio output')
++option('hos-audio', type: 'feature', value: 'auto', description: 'HOS audio output')
+ 
+ # video output features
+ option('caca', type: 'feature', value: 'auto', description: 'CACA')
+diff --git a/osdep/io.c b/osdep/io.c
+index 8cd6dede85..a1933888dd 100644
+--- a/osdep/io.c
++++ b/osdep/io.c
+@@ -62,7 +62,7 @@ bool mp_set_cloexec(int fd)
+     return true;
+ }
+ 
+-#ifdef __MINGW32__
++#if defined(__MINGW32__) || defined(__SWITCH__)
+ int mp_make_cloexec_pipe(int pipes[2])
+ {
+     pipes[0] = pipes[1] = -1;
+@@ -82,7 +82,7 @@ int mp_make_cloexec_pipe(int pipes[2])
+ }
+ #endif
+ 
+-#ifdef __MINGW32__
++#if defined(__MINGW32__) || defined(__SWITCH__)
+ int mp_make_wakeup_pipe(int pipes[2])
+ {
+     return mp_make_cloexec_pipe(pipes);
+diff --git a/osdep/io.h b/osdep/io.h
+index 905558c284..ad96866b23 100644
+--- a/osdep/io.h
++++ b/osdep/io.h
+@@ -208,6 +208,11 @@ locale_t newlocale(int, const char *, locale_t);
+ locale_t uselocale(locale_t);
+ void freelocale(locale_t);
+ 
++#elif defined(__SWITCH__)
++
++#include "switch/sys/mman.h"
++#include <sys/unistd.h>
++
+ #else /* __MINGW32__ */
+ 
+ #include <sys/mman.h>
+diff --git a/osdep/switch/sys/mman.h b/osdep/switch/sys/mman.h
+new file mode 100644
+index 0000000000..f37f1719e1
+--- /dev/null
++++ b/osdep/switch/sys/mman.h
+@@ -0,0 +1,16 @@
++#ifndef _MEMMAP_H_
++#define _MEMMAP_H_
++
++#include <stdio.h>
++#include <stdint.h>
++#include <stdlib.h>
++
++#define PROT_READ       0x1
++#define PROT_WRITE      0x2
++#define MAP_SHARED      0x01
++#define MAP_FAILED      ((void *) -1)
++
++#define mmap(a, b, c, d, e, f) malloc(b)
++#define munmap(a, b) free(a)
++
++#endif
+diff --git a/sub/filter_regex.c b/sub/filter_regex.c
+index 8e299918ce..c7b08f5273 100644
+--- a/sub/filter_regex.c
++++ b/sub/filter_regex.c
+@@ -1,5 +1,5 @@
+-#include <regex.h>
+ #include <sys/types.h>
++#include <regex.h>
+ 
+ #include "common/common.h"
+ #include "common/msg.h"
+diff --git a/video/mp_image.c b/video/mp_image.c
+index 40678d10bd..eaed5dd9c8 100644
+--- a/video/mp_image.c
++++ b/video/mp_image.c
+@@ -176,7 +176,7 @@ static bool mp_image_alloc_planes(struct mp_image *mpi)
+         return false;
+ 
+     // Note: mp_image_pool assumes this creates only 1 AVBufferRef.
+-    mpi->bufs[0] = av_buffer_alloc(size + align);
++    mpi->bufs[0] = av_buffer_aligned_alloc(size + align, 0x100); // Aligmnent required for plane offsets
+     if (!mpi->bufs[0])
+         return false;
+ 
+diff --git a/video/mp_image.h b/video/mp_image.h
+index 98dd666412..376e269356 100644
+--- a/video/mp_image.h
++++ b/video/mp_image.h
+@@ -32,7 +32,7 @@
+ // libraries except libavcodec don't really know what alignment they want.
+ // Things will randomly crash or get slower if the alignment is not satisfied.
+ // Whatever. This value should be pretty safe with current CPU architectures.
+-#define MP_IMAGE_BYTE_ALIGN 64
++#define MP_IMAGE_BYTE_ALIGN 256 // VIC alignement
+ 
+ #define MP_IMGFIELD_TOP_FIRST 0x02
+ #define MP_IMGFIELD_REPEAT_FIRST 0x04

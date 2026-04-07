@@ -3,7 +3,9 @@
 set -euo pipefail
 
 BUILD_DIR="cmake-build-switch"
-LIBROMFS_GENERATOR="reference/switchzzk/library/borealis/libromfs-generator"
+BOREALIS_VENDOR_DIR="vendor/borealis"
+SWITCH_PORTLIBS_DIR="vendor/switch-portlibs"
+LIBROMFS_GENERATOR="${BOREALIS_VENDOR_DIR}/libromfs-generator"
 LIBROMFS_BUILD_DIR=".build-libromfs-generator"
 PORTLIBS_VOLUME="switch-newpipe-portlibs"
 PORTLIBS_DIR="${PORTLIBS_DIR:-}"
@@ -17,6 +19,30 @@ if [ -n "$PORTLIBS_DIR" ]; then
 else
     DOCKER_PORTLIBS_ARGS=(-v "$PORTLIBS_VOLUME:/opt/devkitpro/portlibs/switch")
 fi
+
+if [ ! -d "$BOREALIS_VENDOR_DIR" ] || [ ! -d "$SWITCH_PORTLIBS_DIR" ]; then
+    echo "Missing vendored build dependencies."
+    echo "Expected directories:"
+    echo "  - $BOREALIS_VENDOR_DIR"
+    echo "  - $SWITCH_PORTLIBS_DIR"
+    exit 1
+fi
+
+ensure_cmake_build_dir_matches_source() {
+    local build_dir="$1"
+    local source_dir="$2"
+    local cache_file="$build_dir/CMakeCache.txt"
+
+    if [ ! -f "$cache_file" ]; then
+        return
+    fi
+
+    local configured_source
+    configured_source="$(sed -n 's/^CMAKE_HOME_DIRECTORY:INTERNAL=//p' "$cache_file" | head -n1)"
+    if [ -n "$configured_source" ] && [ "$configured_source" != "$source_dir" ]; then
+        rm -rf "$build_dir"
+    fi
+}
 
 for arg in "$@"; do
     case "$arg" in
@@ -40,8 +66,12 @@ for arg in "$@"; do
     esac
 done
 
+ensure_cmake_build_dir_matches_source \
+  "$LIBROMFS_BUILD_DIR" \
+  "$PWD/${BOREALIS_VENDOR_DIR}/library/lib/extern/libromfs/generator"
+
 if [ ! -x "$LIBROMFS_GENERATOR" ]; then
-    cmake -S reference/switchzzk/library/borealis/library/lib/extern/libromfs/generator \
+    cmake -S "${BOREALIS_VENDOR_DIR}/library/lib/extern/libromfs/generator" \
       -B "$LIBROMFS_BUILD_DIR"
     cmake --build "$LIBROMFS_BUILD_DIR" -j"$(nproc)"
     cp "$LIBROMFS_BUILD_DIR/libromfs-generator" "$LIBROMFS_GENERATOR"
@@ -54,13 +84,15 @@ if [ "$APP_ONLY" -eq 0 ]; then
       -w /work \
       "$DOCKER_IMAGE" \
       bash -lc '
-        ./reference/switchzzk/scripts/switch/build_custom_portlibs.sh --skip-mpv --skip-app
+        ./vendor/switch-portlibs/build_custom_portlibs.sh --skip-mpv --skip-app
         MPV_PC=/opt/devkitpro/portlibs/switch/lib/pkgconfig/mpv.pc
         if [ -f "$MPV_PC" ] && ! grep -q "mbedtls" "$MPV_PC"; then
           sed -i "s#^Libs\\.private: .*#& -lmbedtls -lmbedx509 -lmbedcrypto#" "$MPV_PC"
         fi
       '
 fi
+
+ensure_cmake_build_dir_matches_source "$BUILD_DIR" "$PWD"
 
 docker run --rm \
   --user "$(id -u):$(id -g)" \

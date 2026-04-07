@@ -134,10 +134,13 @@ Switch-NewPipe는 단순한 UI 스캐폴드 단계를 넘겼다. 현재 Borealis
 
 - `reference/NewPipe`
   - Android NewPipe 원본 레퍼런스
-- `reference/switchzzk`
-  - Switch Borealis + mpv + ffmpeg 재생 레퍼런스
+- `reference/` 아래의 무시된 Switch 재생 레퍼런스 앱
+  - Borealis + mpv + ffmpeg 재생 구조 참고용
 - `reference/wiliwili`
   - Switch / 멀티플랫폼 UI 및 재생 구조 레퍼런스
+
+무시된 `reference/` 트리는 탐색/참고용이다.  
+실제 빌드 의존성은 `vendor/borealis`, `vendor/lunasvg`, `vendor/third_party`, `vendor/switch-portlibs`에 직접 vendoring 되어 있다.
 
 ## 빌드
 

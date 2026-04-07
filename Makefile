@@ -1,7 +1,7 @@
 HOST_BUILD_DIR := build/host
 HOST_BIN := $(HOST_BUILD_DIR)/switch_newpipe_host
 HOST_CXX := g++
-HOST_CXXFLAGS := -std=c++17 -O2 -Wall -Wextra -Iinclude -Ireference/switchzzk/third_party
+HOST_CXXFLAGS := -std=c++17 -O2 -Wall -Wextra -Iinclude -Ivendor/third_party
 HOST_LDLIBS := -lssl -lcrypto -pthread
 
 .PHONY: host clean-host
