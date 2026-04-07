@@ -1,5 +1,8 @@
 # Switch-NewPipe
 
+![preview2](./docs/preview2.jpg)
+![preview1](./docs/preview1.jpg)
+
 Switch-NewPipe is a Nintendo Switch CFW homebrew YouTube app inspired by NewPipe.  
 The project targets a practical Switch-native MVP first, not a direct Android NewPipe port.
 
