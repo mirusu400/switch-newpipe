@@ -25,7 +25,7 @@ size_t startup_tab_index(const std::string& tab_id) {
 
 void MainActivity::onContentAvailable() {
     this->registerAction(newpipe::tr("common/info"), brls::ControllerButton::BUTTON_Y, [this](brls::View*) {
-        auto* dialog = new brls::Dialog(newpipe::tr("app/info_body"));
+        auto* dialog = new brls::Dialog(newpipe::tr("app/info_body", APP_VERSION));
         dialog->addButton(newpipe::tr("hints/ok"), [dialog]() { dialog->close(); });
         dialog->setCancelable(true);
         dialog->open();

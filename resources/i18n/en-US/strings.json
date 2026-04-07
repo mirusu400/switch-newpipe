@@ -6,7 +6,7 @@
     "subscriptions": "Subscriptions",
     "library": "Library",
     "settings": "Settings",
-    "info_body": "Switch-NewPipe\n\nReal YouTube home, search, subscriptions, related feeds, channel navigation, and on-device playback are connected.\nYou can change playback quality, startup tab, default home category, short-video filtering, and language in Settings.",
+    "info_body": "Switch-NewPipe\nVersion: {}\n\nReal YouTube home, search, subscriptions, related feeds, channel navigation, and on-device playback are connected.\nYou can change playback quality, startup tab, default home category, short-video filtering, and language in Settings.",
     "playback_failed": "Playback failed: {}"
   },
   "hints": {

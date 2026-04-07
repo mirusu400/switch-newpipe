@@ -6,7 +6,7 @@
     "subscriptions": "구독",
     "library": "라이브러리",
     "settings": "설정",
-    "info_body": "Switch-NewPipe\n\n실제 YouTube 홈, 검색, 구독, 연관 피드, 채널 탐색과 실기 재생 경로가 연결되어 있습니다.\n설정에서 재생 품질, 시작 탭, 기본 홈 카테고리, 짧은 영상 필터, 언어를 바꿀 수 있습니다.",
+    "info_body": "Switch-NewPipe\n버전: {}\n\n실제 YouTube 홈, 검색, 구독, 연관 피드, 채널 탐색과 실기 재생 경로가 연결되어 있습니다.\n설정에서 재생 품질, 시작 탭, 기본 홈 카테고리, 짧은 영상 필터, 언어를 바꿀 수 있습니다.",
     "playback_failed": "재생 실패: {}"
   },
   "hints": {

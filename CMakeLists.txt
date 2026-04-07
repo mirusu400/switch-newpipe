@@ -13,7 +13,7 @@ include(${BOREALIS_LIBRARY}/cmake/commonOption.cmake)
 include(${BOREALIS_LIBRARY}/cmake/toolchain.cmake)
 
 project(switch_newpipe
-    VERSION 0.1.0
+    VERSION 0.0.1
     LANGUAGES C CXX
 )
 
@@ -58,6 +58,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
     APP_NAME="${PROJECT_NAME}"
+    APP_VERSION="${PROJECT_VERSION}"
 )
 
 target_compile_options(${PROJECT_NAME} PRIVATE
