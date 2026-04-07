@@ -1,0 +1,61 @@
+name: Release Build
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-switch-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare cache directories
+        run: mkdir -p .cache/portlibs-switch
+
+      - name: Cache Switch portlibs
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache/portlibs-switch
+            .build-libromfs-generator
+          key: ${{ runner.os }}-switch-portlibs-${{ hashFiles('build.sh', 'CMakeLists.txt', 'reference/switchzzk/scripts/switch/build_custom_portlibs.sh', 'reference/switchzzk/scripts/switch/ffmpeg/**', 'reference/switchzzk/scripts/switch/mpv/**') }}
+
+      - name: Verify Docker
+        run: docker version
+
+      - name: Build Switch NRO
+        env:
+          PORTLIBS_DIR: ${{ github.workspace }}/.cache/portlibs-switch
+        run: ./build.sh
+
+      - name: Prepare release artifacts
+        run: |
+          mkdir -p dist
+          cp cmake-build-switch/switch_newpipe.nro dist/switch_newpipe.nro
+          sha256sum dist/switch_newpipe.nro > dist/SHA256SUMS.txt
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: switch-newpipe-release
+          path: |
+            dist/switch_newpipe.nro
+            dist/SHA256SUMS.txt
+
+      - name: Upload assets to GitHub Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/switch_newpipe.nro
+            dist/SHA256SUMS.txt
+          fail_on_unmatched_files: true
+          overwrite_files: true
