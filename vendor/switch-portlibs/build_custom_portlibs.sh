@@ -45,23 +45,40 @@ echo "  DEVKITPRO=$DEVKITPRO"
 echo "  PORTLIBS_PREFIX=$PORTLIBS_PREFIX"
 echo "  WITH_NVTEGRA=$WITH_NVTEGRA"
 
+install_required_packages() {
+  dkp-pacman -S --noconfirm --needed "$@"
+}
+
+install_optional_package() {
+  local package="$1"
+  if ! dkp-pacman -S --noconfirm --needed "$package" 2>/dev/null; then
+    echo "WARN: $package not available, continuing without"
+  fi
+}
+
 # ─── 의존성 설치 ───
 echo ""
 echo "=== Installing build dependencies ==="
 dkp-pacman -Syu --noconfirm 2>/dev/null || true
-dkp-pacman -S --noconfirm --needed \
+install_required_packages \
   switch-pkg-config dkp-toolchain-vars \
   switch-zlib switch-bzip2 switch-mbedtls \
-  switch-freetype switch-harfbuzz switch-libfribidi switch-libass \
-  switch-mesa switch-sdl2 switch-curl \
-  2>/dev/null || true
+  switch-mesa switch-sdl2 switch-curl
 
-# dav1d 와 lua51은 있으면 설치, 없어도 진행
-dkp-pacman -S --noconfirm --needed switch-dav1d 2>/dev/null || echo "WARN: switch-dav1d not available, continuing without"
-dkp-pacman -S --noconfirm --needed switch-liblua51 2>/dev/null || echo "WARN: switch-liblua51 not available, continuing without"
+install_optional_package switch-freetype
+install_optional_package switch-harfbuzz
+install_optional_package switch-libfribidi
+install_optional_package switch-libass
+install_optional_package switch-dav1d
+install_optional_package switch-liblua51
+
+if ! command -v aarch64-none-elf-pkg-config >/dev/null 2>&1; then
+  echo "ERROR: switch-pkg-config did not install aarch64-none-elf-pkg-config"
+  exit 1
+fi
 
 # meson 빌드에 필요
-dkp-pacman -S --noconfirm --needed dkp-meson-scripts 2>/dev/null || echo "WARN: dkp-meson-scripts not available"
+install_optional_package dkp-meson-scripts
 if ! command -v meson &>/dev/null; then
   echo "Installing meson via apt..."
   apt-get update -qq 2>/dev/null
@@ -129,6 +146,14 @@ if [ "$SKIP_FFMPEG" -eq 0 ]; then
     echo "  dav1d: disabled (not found)"
   fi
 
+  SUBTITLE_FLAGS=""
+  if pkg-config --exists libass freetype2 fribidi 2>/dev/null; then
+    SUBTITLE_FLAGS="--enable-libass --enable-libfreetype --enable-libfribidi"
+    echo "  subtitles: enabled (libass/freetype/fribidi)"
+  else
+    echo "  subtitles: disabled (missing libass/freetype/fribidi)"
+  fi
+
   echo "Configuring ffmpeg..."
   ./configure \
     --prefix="$PORTLIBS_PREFIX" \
@@ -145,7 +170,7 @@ if [ "$SKIP_FFMPEG" -eq 0 ]; then
     --disable-protocols \
     --enable-protocol=file,http,tcp,udp,rtmp,hls,https,tls,ftp,rtp,crypto,httpproxy \
     --enable-zlib --enable-bzlib \
-    --enable-libass --enable-libfreetype --enable-libfribidi \
+    $SUBTITLE_FLAGS \
     $DAV1D_FLAGS \
     $NVTEGRA_FLAGS \
     --enable-version3 --enable-mbedtls
