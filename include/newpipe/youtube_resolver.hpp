@@ -5,6 +5,7 @@
 #include <string>
 
 #include "newpipe/http_client.hpp"
+#include "newpipe/throttling_decrypter.hpp"
 
 namespace newpipe {
 
@@ -45,9 +46,18 @@ public:
     static bool is_youtube_url(const std::string& url);
     static std::optional<std::string> extract_video_id(const std::string& url);
 
+    ThrottlingDecrypter& throttle_decrypter() { return throttle_decrypter_; }
+    void apply_throttle_transform(ResolvedPlayback& playback);
+
 private:
+    std::optional<ResolvedPlayback> resolve_internal(
+        const std::string& url,
+        std::string& error_message,
+        ResolverStatusCallback on_status);
+
     HttpsHttpClient owned_client_;
     HttpClient* client_ = nullptr;
+    ThrottlingDecrypter throttle_decrypter_;
 };
 
 }  // namespace newpipe

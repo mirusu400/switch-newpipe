@@ -21,6 +21,9 @@ constexpr const char* kAndroidUserAgent =
     "com.google.android.youtube/20.10.38 (Linux; U; Android 11) gzip";
 constexpr const char* kIosUserAgent =
     "com.google.ios.youtube/20.10.4 (iPhone16,2; U; CPU iOS 18_3 like Mac OS X)";
+constexpr const char* kWebUserAgent =
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+constexpr const char* kWebClientVersion = "2.20250401.01.00";
 constexpr const char* kYoutubeOriginHeader = "Origin: https://www.youtube.com";
 
 std::string to_lower(std::string value) {
@@ -632,10 +635,37 @@ void report_status(const ResolverStatusCallback& callback, const std::string& ti
 }  // namespace
 
 YouTubeResolver::YouTubeResolver(HttpClient* client)
-    : client_(client ? client : &owned_client_) {
+    : client_(client ? client : &owned_client_),
+      throttle_decrypter_(client ? client : &owned_client_) {
+}
+
+void YouTubeResolver::apply_throttle_transform(ResolvedPlayback& playback) {
+    if (!playback.stream_url.empty()) {
+        playback.stream_url = throttle_decrypter_.apply(playback.stream_url);
+    }
+    if (!playback.external_audio_url.empty()) {
+        playback.external_audio_url = throttle_decrypter_.apply(playback.external_audio_url);
+    }
+    if (!playback.fallback_stream_url.empty()) {
+        playback.fallback_stream_url = throttle_decrypter_.apply(playback.fallback_stream_url);
+    }
+    if (!playback.fallback_external_audio_url.empty()) {
+        playback.fallback_external_audio_url = throttle_decrypter_.apply(playback.fallback_external_audio_url);
+    }
 }
 
 std::optional<ResolvedPlayback> YouTubeResolver::resolve(
+    const std::string& url,
+    std::string& error_message,
+    ResolverStatusCallback on_status) {
+    auto result = resolve_internal(url, error_message, on_status);
+    if (result.has_value()) {
+        apply_throttle_transform(*result);
+    }
+    return result;
+}
+
+std::optional<ResolvedPlayback> YouTubeResolver::resolve_internal(
     const std::string& url,
     std::string& error_message,
     ResolverStatusCallback on_status) {
@@ -694,17 +724,18 @@ std::optional<ResolvedPlayback> YouTubeResolver::resolve(
         if (const auto ios_playback =
                 resolve_ios_hls_playback(client_, *video_id, 720, ios_error)) {
             auto result = *ios_playback;
-            if (adaptive_playback.has_value()) {
+            // Fallback: progressive (ratebypass=yes, no throttle) > adaptive (throttled)
+            if (progressive_playback.has_value()) {
+                result.fallback_stream_url = progressive_playback->stream_url;
+                result.fallback_referer = progressive_playback->referer;
+                result.fallback_http_header_fields = progressive_playback->http_header_fields;
+                result.fallback_quality_label = progressive_playback->quality_label;
+            } else if (adaptive_playback.has_value()) {
                 result.fallback_stream_url = adaptive_playback->stream_url;
                 result.fallback_referer = adaptive_playback->referer;
                 result.fallback_http_header_fields = adaptive_playback->http_header_fields;
                 result.fallback_quality_label = adaptive_playback->quality_label;
                 result.fallback_external_audio_url = adaptive_playback->external_audio_url;
-            } else if (progressive_playback.has_value()) {
-                result.fallback_stream_url = progressive_playback->stream_url;
-                result.fallback_referer = progressive_playback->referer;
-                result.fallback_http_header_fields = progressive_playback->http_header_fields;
-                result.fallback_quality_label = progressive_playback->quality_label;
             }
             return result;
         }
@@ -723,6 +754,10 @@ std::optional<ResolvedPlayback> YouTubeResolver::resolve(
             }
             return result;
         }
+    }
+
+    if (progressive_playback.has_value()) {
+        return progressive_playback;
     }
 
     const std::string dash_manifest_url = get_string(streaming, "dashManifestUrl");

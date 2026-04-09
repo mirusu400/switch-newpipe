@@ -39,6 +39,8 @@ namespace {
 
 constexpr const char* kUserAgent =
     "Mozilla/5.0 (Nintendo Switch; Switch-NewPipe)";
+constexpr const char* kDownloadUserAgent =
+    "com.google.android.youtube/20.10.38 (Linux; U; Android 11) gzip";
 constexpr const char* kProtocolPrefix = "switchcache://";
 constexpr float kPi = 3.14159265f;
 constexpr size_t kInitialStreamBufferBytes = 512 * 1024;
@@ -1008,14 +1010,26 @@ private:
         set_loading_status(newpipe::tr("player/loading/downloading_video_data"), detail);
     }
 
-    bool perform_chunked_ranged_download(CURL* curl, long& status_code) {
+    static std::string build_ranged_url(const std::string& base_url, const std::string& range, int rn) {
+        std::string url = base_url;
+        url += (url.find('?') == std::string::npos) ? "?" : "&";
+        url += "range=" + range + "&rn=" + std::to_string(rn) + "&alr=yes";
+        return url;
+    }
+
+    bool perform_chunked_ranged_download(CURL* parent_curl, long& status_code) {
         constexpr uint64_t kChunkBytes = 512 * 1024;
+        constexpr int kMaxRetries = 5;
         const auto total_size = find_query_u64(active_url_, "clen");
         if (!total_size.has_value() || *total_size == 0) {
             log_line("player: ranged download missing clen");
             return false;
         }
 
+        // Extract settings from parent curl handle, then use fresh handles per chunk
+        const auto extra_headers = split_header_fields(active_http_header_fields_);
+
+        int rn = 0;
         while (!stream_abort_.load()) {
             size_t chunk_start = 0;
             {
@@ -1031,16 +1045,57 @@ private:
             const uint64_t chunk_end = std::min<uint64_t>(
                 *total_size - 1, static_cast<uint64_t>(chunk_start) + kChunkBytes - 1);
             const std::string range = std::to_string(chunk_start) + "-" + std::to_string(chunk_end);
-            curl_easy_setopt(curl, CURLOPT_RANGE, range.c_str());
+            const std::string chunk_url = build_ranged_url(active_url_, range, rn);
             update_download_progress(static_cast<curl_off_t>(*total_size), static_cast<curl_off_t>(chunk_start));
 
-            const CURLcode result = curl_easy_perform(curl);
-            curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status_code);
-            if (result != CURLE_OK || status_code != 206) {
-                logf("player: ranged chunk failed range=%s curl=%d status=%ld",
+            bool chunk_ok = false;
+            for (int retry = 0; retry < kMaxRetries && !stream_abort_.load(); ++retry) {
+                if (retry > 0) {
+                    logf("player: ranged chunk retry %d range=%s", retry, range.c_str());
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1000 * retry));
+                }
+
+                CURL* ch = curl_easy_init();
+                if (!ch) break;
+                struct curl_slist* ch_headers = nullptr;
+                for (const auto& h : extra_headers) {
+                    ch_headers = curl_slist_append(ch_headers, h.c_str());
+                }
+                curl_easy_setopt(ch, CURLOPT_URL, chunk_url.c_str());
+                curl_easy_setopt(ch, CURLOPT_FOLLOWLOCATION, 1L);
+                curl_easy_setopt(ch, CURLOPT_MAXREDIRS, 10L);
+                curl_easy_setopt(ch, CURLOPT_USERAGENT, kDownloadUserAgent);
+                curl_easy_setopt(ch, CURLOPT_SSL_VERIFYPEER, 0L);
+                curl_easy_setopt(ch, CURLOPT_SSL_VERIFYHOST, 0L);
+                curl_easy_setopt(ch, CURLOPT_CONNECTTIMEOUT, 15L);
+                curl_easy_setopt(ch, CURLOPT_TIMEOUT, 30L);
+                curl_easy_setopt(ch, CURLOPT_NOSIGNAL, 1L);
+                curl_easy_setopt(ch, CURLOPT_HTTPHEADER, ch_headers);
+                curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, &SwitchPlayer::on_stream_write);
+                curl_easy_setopt(ch, CURLOPT_WRITEDATA, this);
+                curl_easy_setopt(ch, CURLOPT_FRESH_CONNECT, 1L);
+                curl_easy_setopt(ch, CURLOPT_FORBID_REUSE, 1L);
+                if (!active_referer_.empty()) {
+                    curl_easy_setopt(ch, CURLOPT_REFERER, active_referer_.c_str());
+                }
+
+                const CURLcode result = curl_easy_perform(ch);
+                curl_easy_getinfo(ch, CURLINFO_RESPONSE_CODE, &status_code);
+                curl_slist_free_all(ch_headers);
+                curl_easy_cleanup(ch);
+
+                if (result == CURLE_OK && (status_code == 206 || status_code == 200)) {
+                    chunk_ok = true;
+                    break;
+                }
+                logf("player: ranged chunk failed range=%s curl=%d status=%ld attempt=%d",
                      range.c_str(),
                      static_cast<int>(result),
-                     status_code);
+                     status_code,
+                     retry + 1);
+            }
+
+            if (!chunk_ok) {
                 return false;
             }
 
@@ -1053,6 +1108,7 @@ private:
                 logf("player: ranged chunk empty range=%s", range.c_str());
                 return false;
             }
+            ++rn;
         }
 
         return false;
@@ -1103,10 +1159,13 @@ private:
                 header_list = curl_slist_append(header_list, header.c_str());
             }
 
+            const bool is_googlevideo = contains_case_insensitive(active_url_, "googlevideo.com/videoplayback");
+            const char* ua = is_googlevideo ? kDownloadUserAgent : kUserAgent;
+
             curl_easy_setopt(curl, CURLOPT_URL, active_url_.c_str());
             curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
             curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 10L);
-            curl_easy_setopt(curl, CURLOPT_USERAGENT, kUserAgent);
+            curl_easy_setopt(curl, CURLOPT_USERAGENT, ua);
             curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
             curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
             curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 15L);
@@ -1123,11 +1182,15 @@ private:
             }
             long status_code = 0;
             CURLcode result = CURLE_OK;
-            if (contains_case_insensitive(active_url_, "googlevideo.com/videoplayback")) {
+            const bool has_ratebypass = contains_case_insensitive(active_url_, "ratebypass=yes");
+            if (is_googlevideo && !has_ratebypass) {
                 log_line("player: using chunked ranged download");
                 const bool ok = perform_chunked_ranged_download(curl, status_code);
                 result = ok ? CURLE_OK : CURLE_HTTP_RETURNED_ERROR;
             } else {
+                if (has_ratebypass) {
+                    log_line("player: using direct download (ratebypass)");
+                }
                 result = curl_easy_perform(curl);
                 curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status_code);
             }
@@ -1138,7 +1201,8 @@ private:
                 std::lock_guard<std::mutex> lock(stream_mutex_);
                 stream_download_done_ = true;
                 stream_download_success_ =
-                    !stream_abort_.load() && result == CURLE_OK && status_code >= 200 && status_code < 300;
+                    !stream_abort_.load() && result == CURLE_OK
+                    && ((status_code >= 200 && status_code < 300) || status_code == 206);
                 if (!stream_download_success_) {
                     logf("player: stream download failed url=%s curl=%d status=%ld",
                          active_url_.c_str(),
@@ -1206,10 +1270,11 @@ private:
             header_list = curl_slist_append(header_list, header.c_str());
         }
 
+        const bool is_gv = contains_case_insensitive(url, "googlevideo.com/videoplayback");
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 10L);
-        curl_easy_setopt(curl, CURLOPT_USERAGENT, kUserAgent);
+        curl_easy_setopt(curl, CURLOPT_USERAGENT, is_gv ? kDownloadUserAgent : kUserAgent);
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
         curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 15L);
@@ -1231,6 +1296,8 @@ private:
                 error = "audio ranged download missing clen";
             } else {
                 constexpr uint64_t kChunkBytes = 512 * 1024;
+                constexpr int kMaxRetries = 3;
+                int rn = 0;
                 while (!abort_flag.load()) {
                     if (download_context.offset >= *total_size) {
                         status_code = 206;
@@ -1241,15 +1308,31 @@ private:
                     const uint64_t chunk_end = std::min<uint64_t>(
                         *total_size - 1, chunk_start + kChunkBytes - 1);
                     const std::string range = std::to_string(chunk_start) + "-" + std::to_string(chunk_end);
-                    curl_easy_setopt(curl, CURLOPT_RANGE, range.c_str());
-                    result = curl_easy_perform(curl);
-                    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status_code);
-                    if (result != CURLE_OK || status_code != 206) {
-                        error = "audio ranged chunk failed";
-                        logf("player: audio ranged chunk failed range=%s curl=%d status=%ld",
+                    const std::string chunk_url = build_ranged_url(url, range, rn);
+                    curl_easy_setopt(curl, CURLOPT_URL, chunk_url.c_str());
+                    curl_easy_setopt(curl, CURLOPT_RANGE, nullptr);
+
+                    bool chunk_ok = false;
+                    for (int retry = 0; retry < kMaxRetries && !abort_flag.load(); ++retry) {
+                        if (retry > 0) {
+                            std::this_thread::sleep_for(std::chrono::milliseconds(500 * retry));
+                            curl_easy_setopt(curl, CURLOPT_URL, chunk_url.c_str());
+                        }
+                        result = curl_easy_perform(curl);
+                        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status_code);
+                        if (result == CURLE_OK && (status_code == 206 || status_code == 200)) {
+                            chunk_ok = true;
+                            break;
+                        }
+                        logf("player: audio ranged chunk failed range=%s curl=%d status=%ld attempt=%d",
                              range.c_str(),
                              static_cast<int>(result),
-                             status_code);
+                             status_code,
+                             retry + 1);
+                    }
+
+                    if (!chunk_ok) {
+                        error = "audio ranged chunk failed";
                         break;
                     }
                     if (download_context.offset <= chunk_start) {
@@ -1257,6 +1340,7 @@ private:
                         error = "audio ranged chunk empty";
                         break;
                     }
+                    ++rn;
                 }
             }
         } else {
@@ -1332,10 +1416,13 @@ private:
                 header_list = curl_slist_append(header_list, header.c_str());
             }
 
+            const bool is_googlevideo_audio = contains_case_insensitive(source_url, "googlevideo.com/videoplayback");
+            const char* audio_ua = is_googlevideo_audio ? kDownloadUserAgent : kUserAgent;
+
             curl_easy_setopt(curl, CURLOPT_URL, source_url.c_str());
             curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
             curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 10L);
-            curl_easy_setopt(curl, CURLOPT_USERAGENT, kUserAgent);
+            curl_easy_setopt(curl, CURLOPT_USERAGENT, audio_ua);
             curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
             curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
             curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 15L);
@@ -1354,12 +1441,21 @@ private:
             long status_code = 0;
             CURLcode result = CURLE_OK;
             if (contains_case_insensitive(source_url, "googlevideo.com/videoplayback")) {
+                // Use fresh curl handle per chunk to avoid connection reuse issues
+                // with YouTube CDN concurrent download limits.
+                curl_slist_free_all(header_list);
+                curl_easy_cleanup(curl);
+                curl = nullptr;
+                header_list = nullptr;
+
                 const auto total_size = find_query_u64(source_url, "clen");
                 if (!total_size.has_value() || *total_size == 0) {
                     result = CURLE_HTTP_RETURNED_ERROR;
                     audio_download_error_ = "audio ranged download missing clen";
                 } else {
                     constexpr uint64_t kChunkBytes = 512 * 1024;
+                    constexpr int kMaxRetries = 5;
+                    int rn = 0;
                     while (!audio_download_abort_.load()) {
                         const size_t chunk_start = audio_downloaded_bytes_.load();
                         if (chunk_start >= *total_size) {
@@ -1370,15 +1466,56 @@ private:
                         const uint64_t chunk_end = std::min<uint64_t>(
                             *total_size - 1, static_cast<uint64_t>(chunk_start) + kChunkBytes - 1);
                         const std::string range = std::to_string(chunk_start) + "-" + std::to_string(chunk_end);
-                        curl_easy_setopt(curl, CURLOPT_RANGE, range.c_str());
-                        result = curl_easy_perform(curl);
-                        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status_code);
-                        if (result != CURLE_OK || status_code != 206) {
-                            audio_download_error_ = "audio ranged chunk failed";
-                            logf("player: audio ranged chunk failed range=%s curl=%d status=%ld",
+                        const std::string chunk_url = build_ranged_url(source_url, range, rn);
+
+                        bool chunk_ok = false;
+                        for (int retry = 0; retry < kMaxRetries && !audio_download_abort_.load(); ++retry) {
+                            if (retry > 0) {
+                                std::this_thread::sleep_for(std::chrono::milliseconds(1000 * retry));
+                            }
+
+                            CURL* ch = curl_easy_init();
+                            if (!ch) break;
+                            struct curl_slist* ch_headers = nullptr;
+                            for (const auto& h : extra_headers) {
+                                ch_headers = curl_slist_append(ch_headers, h.c_str());
+                            }
+                            curl_easy_setopt(ch, CURLOPT_URL, chunk_url.c_str());
+                            curl_easy_setopt(ch, CURLOPT_FOLLOWLOCATION, 1L);
+                            curl_easy_setopt(ch, CURLOPT_MAXREDIRS, 10L);
+                            curl_easy_setopt(ch, CURLOPT_USERAGENT, audio_ua);
+                            curl_easy_setopt(ch, CURLOPT_SSL_VERIFYPEER, 0L);
+                            curl_easy_setopt(ch, CURLOPT_SSL_VERIFYHOST, 0L);
+                            curl_easy_setopt(ch, CURLOPT_CONNECTTIMEOUT, 15L);
+                            curl_easy_setopt(ch, CURLOPT_TIMEOUT, 30L);
+                            curl_easy_setopt(ch, CURLOPT_NOSIGNAL, 1L);
+                            curl_easy_setopt(ch, CURLOPT_HTTPHEADER, ch_headers);
+                            curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, &SwitchPlayer::on_audio_stream_write);
+                            curl_easy_setopt(ch, CURLOPT_WRITEDATA, this);
+                            curl_easy_setopt(ch, CURLOPT_FRESH_CONNECT, 1L);
+                            curl_easy_setopt(ch, CURLOPT_FORBID_REUSE, 1L);
+                            if (!source_referer.empty()) {
+                                curl_easy_setopt(ch, CURLOPT_REFERER, source_referer.c_str());
+                            }
+
+                            result = curl_easy_perform(ch);
+                            curl_easy_getinfo(ch, CURLINFO_RESPONSE_CODE, &status_code);
+                            curl_slist_free_all(ch_headers);
+                            curl_easy_cleanup(ch);
+
+                            if (result == CURLE_OK && (status_code == 206 || status_code == 200)) {
+                                chunk_ok = true;
+                                break;
+                            }
+                            logf("player: audio ranged chunk failed range=%s curl=%d status=%ld attempt=%d",
                                  range.c_str(),
                                  static_cast<int>(result),
-                                 status_code);
+                                 status_code,
+                                 retry + 1);
+                        }
+
+                        if (!chunk_ok) {
+                            audio_download_error_ = "audio ranged chunk failed";
                             break;
                         }
                         if (audio_downloaded_bytes_.load() <= chunk_start) {
@@ -1386,14 +1523,16 @@ private:
                             audio_download_error_ = "audio ranged chunk empty";
                             break;
                         }
+                        ++rn;
                     }
                 }
             } else {
                 result = curl_easy_perform(curl);
                 curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status_code);
+                curl_slist_free_all(header_list);
+                curl_easy_cleanup(curl);
             }
-            curl_slist_free_all(header_list);
-            curl_easy_cleanup(curl);
+            // curl and header_list already cleaned up above
 
             const bool ok = !audio_download_abort_.load()
                 && result == CURLE_OK
@@ -1558,17 +1697,26 @@ private:
             mpv_set_option_string(
                 mpv_, "demuxer-lavf-o", "protocol_whitelist=file,http,https,tcp,tls,crypto,data,subfile");
         }
-        if (contains_case_insensitive(active_quality_label_, "hls")) {
+        const bool is_hls = contains_case_insensitive(active_quality_label_, "hls");
+        if (is_hls) {
             const std::string hls_bitrate = active_hls_bitrate_ > 0
                 ? std::to_string(active_hls_bitrate_)
                 : std::string("max");
             mpv_set_option_string(mpv_, "hls-bitrate", hls_bitrate.c_str());
+            mpv_set_option_string(mpv_, "load-unsafe-playlists", "yes");
+            mpv_set_option_string(
+                mpv_, "demuxer-lavf-o",
+                "protocol_whitelist=file,http,https,tcp,tls,crypto,data,subfile");
         }
         if (use_stream_bridge_) {
             mpv_set_option_string(
                 mpv_, "demuxer-lavf-o", "protocol_whitelist=file,http,https,tcp,tls,crypto,data,switchcache");
         }
-        mpv_set_option_string(mpv_, "user-agent", kUserAgent);
+        // Use Android UA for YouTube CDN to avoid rejection
+        const bool is_youtube_stream = contains_case_insensitive(active_url_, "googlevideo.com")
+            || contains_case_insensitive(active_url_, "youtube.com");
+        mpv_set_option_string(mpv_, "user-agent",
+            is_youtube_stream ? kDownloadUserAgent : kUserAgent);
         if (!active_referer_.empty()) {
             mpv_set_option_string(mpv_, "referrer", active_referer_.c_str());
         }
@@ -1775,7 +1923,7 @@ private:
 
             if (!first_frame_rendered_) {
                 if (!file_loaded_ && !fallback_attempted_ && !fallback_url_.empty()
-                    && std::chrono::steady_clock::now() - load_started_at_ > std::chrono::seconds(4)) {
+                    && std::chrono::steady_clock::now() - load_started_at_ > std::chrono::seconds(30)) {
                     std::string fallback_error;
                     log_line("player: load timeout before file-loaded, attempting fallback");
                     if (retry_with_fallback(fallback_error)) {

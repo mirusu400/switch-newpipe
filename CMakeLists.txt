@@ -48,6 +48,17 @@ set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 add_compile_definitions(PLUTOVG_DISABLE_FONT_FACE_CACHE_LOAD)
 add_subdirectory(${LUNASVG_DIR} EXCLUDE_FROM_ALL)
 
+set(QJS_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+set(QJS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(QJS_BUILD_CLI OFF CACHE BOOL "" FORCE)
+if (PLATFORM_SWITCH)
+    set(CMAKE_DL_LIBS "" CACHE STRING "" FORCE)
+    set(CMAKE_THREAD_LIBS_INIT "" CACHE STRING "" FORCE)
+    set(M_LIBRARIES "" CACHE STRING "" FORCE)
+    set(M_LIBRARIES-NOTFOUND TRUE CACHE BOOL "" FORCE)
+endif()
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/vendor/quickjs EXCLUDE_FROM_ALL)
+
 program_target(${PROJECT_NAME} "${MAIN_SRC}")
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 17)
 
@@ -90,6 +101,7 @@ endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE
     borealis
     lunasvg::lunasvg
+    qjs
     z
     ${APP_PLATFORM_LIB}
 )
