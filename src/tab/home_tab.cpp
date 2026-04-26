@@ -104,7 +104,13 @@ void HomeTab::loadHome() {
     buildGrid();
 
     if (statusLabel) {
-        statusLabel->setText(newpipe::tr("common/count_with_title", feed->kiosk.title, items_.size()));
+        std::string title = feed->kiosk.title;
+        const std::string option_key = "settings/home_kiosk/options/" + feed->kiosk.id;
+        const std::string translated = newpipe::tr(option_key);
+        if (!translated.empty() && translated != option_key) {
+            title = translated;
+        }
+        statusLabel->setText(newpipe::tr("common/count_with_title", title, items_.size()));
     }
     if (spinner) {
         spinner->setVisibility(brls::Visibility::GONE);
@@ -122,6 +128,17 @@ void HomeTab::buildGrid() {
     }
 
     newpipe::logf("home: buildGrid items=%zu", items_.size());
+    // borealis Application::giveFocus(nullptr) silently fails to clear currentFocus,
+    // so clearing the focused card via clearViews leaves a dangling pointer that the
+    // next ScrollingFrame frame dereferences. Move focus to scrollFrame first.
+    if (scrollFrame) {
+        for (brls::View* v = brls::Application::getCurrentFocus(); v; v = v->getParent()) {
+            if (v == gridBox) {
+                brls::Application::giveFocus(scrollFrame);
+                break;
+            }
+        }
+    }
     gridBox->clearViews();
     for (size_t i = 0; i < items_.size(); i += kGridColumns) {
         auto* row = new brls::Box(brls::Axis::ROW);

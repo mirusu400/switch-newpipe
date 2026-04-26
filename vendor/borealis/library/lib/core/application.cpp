@@ -880,7 +880,9 @@ void Application::giveFocus(View* view)
     View* oldFocus = Application::currentFocus;
     View* newFocus = view ? view->getDefaultFocus() : nullptr;
 
-    if (oldFocus != newFocus && newFocus != nullptr)
+    // Allow newFocus == nullptr so View::~View's giveFocus(nullptr) sanity check
+    // actually clears Application::currentFocus instead of leaving a dangling pointer.
+    if (oldFocus != newFocus)
     {
         if (oldFocus)
             oldFocus->onFocusLost();

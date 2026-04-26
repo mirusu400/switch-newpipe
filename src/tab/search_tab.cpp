@@ -15,6 +15,9 @@ constexpr size_t kGridColumns = 4;
 SearchTab::SearchTab() : service_() {
     this->inflateFromXMLRes("xml/tabs/search.xml");
     newpipe::log_line("search: construct");
+    if (statusLabel) {
+        statusLabel->setText(newpipe::tr("search/prompt"));
+    }
     brls::delay(700, [this]() {
         interactionReady_.store(true);
         newpipe::log_line("search: interaction ready");
@@ -52,6 +55,14 @@ void SearchTab::doSearch(const std::string& query) {
     if (query.empty()) {
         items_.clear();
         if (gridBox) {
+            if (scrollFrame) {
+                for (brls::View* v = brls::Application::getCurrentFocus(); v; v = v->getParent()) {
+                    if (v == gridBox) {
+                        brls::Application::giveFocus(scrollFrame);
+                        break;
+                    }
+                }
+            }
             gridBox->clearViews();
         }
         if (statusLabel) {
@@ -91,6 +102,16 @@ void SearchTab::buildGrid() {
     }
 
     newpipe::logf("search: buildGrid items=%zu", items_.size());
+    // See HomeTab::buildGrid — work around borealis giveFocus(nullptr) no-op
+    // that would leave a dangling currentFocus after clearing the focused card.
+    if (scrollFrame) {
+        for (brls::View* v = brls::Application::getCurrentFocus(); v; v = v->getParent()) {
+            if (v == gridBox) {
+                brls::Application::giveFocus(scrollFrame);
+                break;
+            }
+        }
+    }
     gridBox->clearViews();
     for (size_t i = 0; i < items_.size(); i += kGridColumns) {
         auto* row = new brls::Box(brls::Axis::ROW);

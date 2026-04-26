@@ -75,6 +75,16 @@ void LibraryTab::buildGrid() {
         return;
     }
 
+    // See HomeTab::buildGrid — work around borealis giveFocus(nullptr) no-op
+    // that would leave a dangling currentFocus after clearing the focused card.
+    if (this->scrollFrame) {
+        for (brls::View* v = brls::Application::getCurrentFocus(); v; v = v->getParent()) {
+            if (v == this->gridBox) {
+                brls::Application::giveFocus(this->scrollFrame);
+                break;
+            }
+        }
+    }
     this->gridBox->clearViews();
     for (size_t i = 0; i < this->items_.size(); i += kGridColumns) {
         auto* row = new brls::Box(brls::Axis::ROW);

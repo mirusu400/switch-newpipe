@@ -6,6 +6,7 @@
 #include <queue>
 #include <string>
 #include <thread>
+#include <unordered_map>
 
 #include <borealis.hpp>
 
@@ -29,11 +30,16 @@ private:
     ~ImageLoader();
 
     void worker();
+    bool tryGetCached(const std::string& url, std::string* out);
+    void putCache(const std::string& url, const std::string& data);
 
     std::thread thread_;
     std::mutex mutex_;
     std::queue<AsyncRequest> queue_;
     std::atomic<bool> running_{false};
+
+    std::mutex cache_mutex_;
+    std::unordered_map<std::string, std::string> cache_;
 };
 
 }  // namespace newpipe
