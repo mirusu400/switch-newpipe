@@ -13,7 +13,7 @@ include(${BOREALIS_LIBRARY}/cmake/commonOption.cmake)
 include(${BOREALIS_LIBRARY}/cmake/toolchain.cmake)
 
 project(switch_newpipe
-    VERSION 0.0.3
+    VERSION 0.0.5
     LANGUAGES C CXX
 )
 

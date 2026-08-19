@@ -29,7 +29,7 @@
 ## What You Can Do
 
 - Browse **Home**, **Search**, **Subscriptions**, **Library**, and **Settings**
-- Watch YouTube at **720p** (HLS streaming, no throttle)
+- Watch YouTube up to **1080p** in docked mode (**720p** handheld) — HLS streaming, no throttle
 - Search for any video and play it immediately
 - Log in with cookies to see your subscriptions and personalized recommendations
 - Save watch history and favorites locally
@@ -80,9 +80,10 @@ Configure in **Settings** tab:
 
 | Mode | Description |
 |------|-------------|
-| **Standard 720p** | Best quality. Tries 720p HLS first, falls back gracefully |
-| **Compatibility** | Prefers progressive MP4 (video+audio combined) |
-| **Data Saver** | Lower quality around 480p to save bandwidth |
+| **Best** | Auto by console state: **1080p when docked**, **720p in handheld** |
+| **1080p** | Always target 1080p (HLS), falls back gracefully |
+| **720p** | Always target 720p (HLS), falls back gracefully |
+| **320p** | Low quality (~360p progressive MP4) to save bandwidth |
 
 ## Data Files
 

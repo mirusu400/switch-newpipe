@@ -104,9 +104,10 @@
       "save_failed": "재생 품질 저장 실패",
       "saved": "재생 품질 설정을 저장했습니다",
       "options": {
-        "standard": "표준 720p",
-        "compatibility": "호환성 우선",
-        "data_saver": "데이터 절약"
+        "best": "Best (독 1080p / 휴대 720p)",
+        "hd_1080": "1080p",
+        "hd_720": "720p",
+        "low_320": "320p"
       }
     },
     "startup_tab": {
@@ -225,7 +226,7 @@
       "initial_buffer_ready": "초기 버퍼 준비 완료",
       "download_complete": "다운로드 완료",
       "attaching_audio_track": "오디오 트랙 연결 중",
-      "stream_720_failed": "720P 스트림 실패",
+      "stream_720_failed": "기본 스트림 실패",
       "fallback_safe_stream": "안전 스트림으로 전환 중",
       "playback_started": "재생 시작",
       "video_frame_ready": "비디오 프레임 준비 완료",
@@ -236,10 +237,10 @@
       "resolving_youtube_stream": "유튜브 스트림 해석 중",
       "contacting_player_api": "플레이어 API 연결 중",
       "selecting_playable_format": "재생 가능한 포맷 선택 중",
-      "requesting_720p_hls_stream": "720P HLS 스트림 요청 중",
-      "requesting_720p_avc_stream": "720P AVC 스트림 요청 중",
+      "requesting_hls_stream": "HLS 스트림 요청 중",
+      "requesting_avc_stream": "AVC 스트림 요청 중",
       "requesting_progressive_stream": "프로그레시브 스트림 요청 중",
-      "requesting_720p_ump_stream": "720P UMP 스트림 요청 중"
+      "requesting_ump_stream": "UMP 스트림 요청 중"
     }
   },
   "stream": {

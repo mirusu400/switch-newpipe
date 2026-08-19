@@ -31,12 +31,14 @@ std::string language_from_selection(int selection) {
 
 int playback_quality_selection(newpipe::PlaybackQualityMode mode) {
     switch (mode) {
-        case newpipe::PlaybackQualityMode::STANDARD_720:
+        case newpipe::PlaybackQualityMode::BEST:
             return 0;
-        case newpipe::PlaybackQualityMode::COMPATIBILITY:
+        case newpipe::PlaybackQualityMode::HD_1080:
             return 1;
-        case newpipe::PlaybackQualityMode::DATA_SAVER:
+        case newpipe::PlaybackQualityMode::HD_720:
             return 2;
+        case newpipe::PlaybackQualityMode::LOW_320:
+            return 3;
         default:
             return 0;
     }
@@ -45,11 +47,13 @@ int playback_quality_selection(newpipe::PlaybackQualityMode mode) {
 newpipe::PlaybackQualityMode playback_quality_from_selection(int selection) {
     switch (selection) {
         case 1:
-            return newpipe::PlaybackQualityMode::COMPATIBILITY;
+            return newpipe::PlaybackQualityMode::HD_1080;
         case 2:
-            return newpipe::PlaybackQualityMode::DATA_SAVER;
+            return newpipe::PlaybackQualityMode::HD_720;
+        case 3:
+            return newpipe::PlaybackQualityMode::LOW_320;
         default:
-            return newpipe::PlaybackQualityMode::STANDARD_720;
+            return newpipe::PlaybackQualityMode::BEST;
     }
 }
 
@@ -145,9 +149,10 @@ SettingsTab::SettingsTab() {
     this->playbackQualityCell->init(
         newpipe::tr("settings/playback_quality/title"),
         {
-            newpipe::tr("settings/playback_quality/options/standard"),
-            newpipe::tr("settings/playback_quality/options/compatibility"),
-            newpipe::tr("settings/playback_quality/options/data_saver"),
+            newpipe::tr("settings/playback_quality/options/best"),
+            newpipe::tr("settings/playback_quality/options/hd_1080"),
+            newpipe::tr("settings/playback_quality/options/hd_720"),
+            newpipe::tr("settings/playback_quality/options/low_320"),
         },
         0,
         [this](int selection) {

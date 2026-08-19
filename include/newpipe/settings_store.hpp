@@ -11,7 +11,7 @@ struct AppSettings {
     std::string language = "auto";
     std::string startup_tab = "home";
     std::string home_kiosk = "recommended";
-    PlaybackQualityMode playback_quality = PlaybackQualityMode::STANDARD_720;
+    PlaybackQualityMode playback_quality = PlaybackQualityMode::BEST;
     bool hide_short_videos = false;
 };
 

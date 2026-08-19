@@ -2,10 +2,13 @@
 #include <string>
 
 #include "newpipe/auth_store.hpp"
+#include "newpipe/log.hpp"
+#include "newpipe/settings_store.hpp"
 #include "newpipe/youtube_catalog_service.hpp"
 #include "newpipe/youtube_resolver.hpp"
 
 int main(int argc, char* argv[]) {
+    newpipe::init_log();
     newpipe::YouTubeCatalogService service;
     std::string auth_file;
     std::string search_query;
@@ -14,10 +17,13 @@ int main(int argc, char* argv[]) {
     std::string channel_url;
     std::string playlist_url;
     std::string comments_url;
+    std::string quality_arg;
     bool subscriptions_mode = false;
     for (int i = 1; i < argc; i++) {
         const std::string arg = argv[i];
-        if (arg == "--auth-file" && i + 1 < argc) {
+        if (arg == "--quality" && i + 1 < argc) {
+            quality_arg = argv[++i];
+        } else if (arg == "--auth-file" && i + 1 < argc) {
             auth_file = argv[++i];
         } else if (arg == "--subscriptions") {
             subscriptions_mode = true;
@@ -144,6 +150,17 @@ int main(int argc, char* argv[]) {
     }
 
     if (!resolve_url.empty()) {
+        if (!quality_arg.empty()) {
+            newpipe::PlaybackQualityMode mode = newpipe::PlaybackQualityMode::BEST;
+            if (quality_arg == "1080") {
+                mode = newpipe::PlaybackQualityMode::HD_1080;
+            } else if (quality_arg == "720") {
+                mode = newpipe::PlaybackQualityMode::HD_720;
+            } else if (quality_arg == "320" || quality_arg == "360") {
+                mode = newpipe::PlaybackQualityMode::LOW_320;
+            }
+            newpipe::SettingsStore::instance().update_playback_quality(mode);
+        }
         newpipe::YouTubeResolver resolver;
         std::string error;
         const auto resolved = resolver.resolve(

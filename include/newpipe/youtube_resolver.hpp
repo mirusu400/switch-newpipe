@@ -10,16 +10,23 @@
 namespace newpipe {
 
 enum class PlaybackQualityMode {
-    STANDARD_720 = 0,
-    COMPATIBILITY = 1,
-    DATA_SAVER = 2,
+    // BEST auto-selects by console state: docked -> 1080p, handheld -> 720p.
+    BEST = 0,
+    HD_1080 = 1,
+    HD_720 = 2,
+    LOW_320 = 3,
 };
+
+// Resolves a quality mode to a target video height. BEST inspects the Switch
+// operation mode (docked -> 1080p, handheld -> 720p); on host it targets 1080p.
+int preferred_height_for_quality(PlaybackQualityMode mode);
 
 struct ResolvedPlayback {
     std::string stream_url;
     std::string referer;
     std::string http_header_fields;
     std::string quality_label;
+    std::string audio_language;
     int hls_bitrate = 0;
     std::string playlist_body;
     std::string external_audio_url;

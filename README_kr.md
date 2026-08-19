@@ -106,13 +106,14 @@ Switch-NewPipe는 단순한 UI 스캐폴드 단계를 넘겼다. 현재 Borealis
 
 재생 정책:
 
-- `표준 720p`
-  - 가능하면 720p 경로 우선
-  - 필요 시 fallback
-- `호환성 우선`
-  - progressive MP4 경로 우선
-- `데이터 절약`
-  - 480p 부근의 낮은 progressive 포맷 우선
+- `Best`
+  - 독 모드면 1080p, 휴대 모드면 720p 자동 선택
+- `1080p`
+  - 항상 1080p(HLS) 목표, 필요 시 fallback
+- `720p`
+  - 항상 720p(HLS) 목표, 필요 시 fallback
+- `320p`
+  - 약 360p progressive 포맷으로 데이터 절약
 
 현재 제한:
 

@@ -61,17 +61,17 @@ std::string translate_loading_text(const std::string& value) {
     if (value == "SELECTING PLAYABLE FORMAT") {
         return newpipe::tr("player/loading/selecting_playable_format");
     }
-    if (value == "REQUESTING 720P HLS STREAM") {
-        return newpipe::tr("player/loading/requesting_720p_hls_stream");
+    if (value == "REQUESTING HLS STREAM") {
+        return newpipe::tr("player/loading/requesting_hls_stream");
     }
-    if (value == "REQUESTING 720P AVC STREAM") {
-        return newpipe::tr("player/loading/requesting_720p_avc_stream");
+    if (value == "REQUESTING AVC STREAM") {
+        return newpipe::tr("player/loading/requesting_avc_stream");
     }
     if (value == "REQUESTING PROGRESSIVE STREAM") {
         return newpipe::tr("player/loading/requesting_progressive_stream");
     }
-    if (value == "REQUESTING 720P UMP STREAM") {
-        return newpipe::tr("player/loading/requesting_720p_ump_stream");
+    if (value == "REQUESTING UMP STREAM") {
+        return newpipe::tr("player/loading/requesting_ump_stream");
     }
     return value;
 }
@@ -949,6 +949,7 @@ private:
         active_referer_ = request_.referer;
         active_http_header_fields_ = request_.http_header_fields;
         active_quality_label_.clear();
+        active_audio_language_.clear();
         active_hls_bitrate_ = 0;
         active_external_audio_url_.clear();
         fallback_url_.clear();
@@ -982,6 +983,7 @@ private:
         active_referer_ = resolved->referer;
         active_http_header_fields_ = resolved->http_header_fields;
         active_quality_label_ = resolved->quality_label;
+        active_audio_language_ = resolved->audio_language;
         active_hls_bitrate_ = resolved->hls_bitrate;
         active_external_audio_url_ = resolved->external_audio_url;
         fallback_url_ = resolved->fallback_stream_url;
@@ -1946,6 +1948,12 @@ private:
             mpv_set_option_string(
                 mpv_, "demuxer-lavf-o",
                 "protocol_whitelist=file,http,https,tcp,tls,crypto,data,subfile");
+            // The visionOS HLS master offers original + AI-dubbed audio with no
+            // DEFAULT; prefer the original language so mpv doesn't pick the dub.
+            if (!active_audio_language_.empty()) {
+                mpv_set_option_string(mpv_, "alang", active_audio_language_.c_str());
+                logf("player: prefer audio language=%s", active_audio_language_.c_str());
+            }
         }
         if (use_stream_bridge_) {
             mpv_set_option_string(
@@ -2076,6 +2084,20 @@ private:
         attach_external_audio_if_needed();
     }
 
+    // True when the active video stream (progressive / tokenless UMP direct URL)
+    // finished downloading unsuccessfully after already delivering some bytes.
+    // A tokenless UMP URL 403s mid-stream once the initial CDN burst is spent
+    // (no PoToken on-device); mpv then stalls forever instead of ending, so we
+    // watch this to trigger a graceful fallback to the reliable progressive
+    // stream (e.g. 360p) even after playback has started.
+    bool video_stream_failed_midstream() {
+        if (!use_stream_bridge_ || stream_abort_.load()) {
+            return false;
+        }
+        std::lock_guard<std::mutex> lock(stream_mutex_);
+        return stream_download_done_ && !stream_download_success_ && streamed_bytes_ > 0;
+    }
+
     bool retry_with_fallback(std::string& error) {
         if (fallback_attempted_ || fallback_url_.empty()) {
             return false;
@@ -2155,6 +2177,27 @@ private:
             }
 
             maybe_attach_external_audio();
+
+            // Once the first frame is up, mpv no longer triggers the initial
+            // fallback path. If the video stream then dies mid-download (e.g. a
+            // tokenless UMP URL 403ing after the burst), switch to the reliable
+            // progressive fallback and restart instead of freezing forever.
+            if (first_frame_rendered_ && !fallback_attempted_ && !fallback_url_.empty()
+                && video_stream_failed_midstream()) {
+                std::string fallback_error;
+                log_line("player: mid-stream download failure, falling back to safe stream");
+                if (retry_with_fallback(fallback_error)) {
+                    loading_phase = 0;
+                    force_redraw = true;
+                    continue;
+                }
+                if (!fallback_error.empty()) {
+                    terminal_error_ = fallback_error;
+                    logf("player: mid-stream fallback failed error=%s", fallback_error.c_str());
+                    running = false;
+                    continue;
+                }
+            }
 
             bool frame_ready = false;
             if (render_context_ && render_update_pending_.exchange(false)) {
@@ -2718,6 +2761,7 @@ private:
     std::string active_referer_;
     std::string active_http_header_fields_;
     std::string active_quality_label_;
+    std::string active_audio_language_;
     int active_hls_bitrate_ = 0;
     std::string active_external_audio_url_;
     std::string active_external_audio_local_path_;

@@ -14,6 +14,10 @@
 #include "newpipe/settings_store.hpp"
 #include "newpipe/ump.hpp"
 
+#ifdef __SWITCH__
+#include <switch.h>
+#endif
+
 namespace newpipe {
 namespace {
 
@@ -29,6 +33,12 @@ constexpr const char* kAndroidVrUserAgent =
 #endif
 constexpr const char* kIosUserAgent =
     "com.google.ios.youtube/20.10.4 (iPhone16,2; U; CPU iOS 18_3 like Mac OS X)";
+// Apple Vision Pro (visionOS) client. As of 2026 this is the only client that
+// still returns full-length 720p/1080p streams (direct URLs and an HLS manifest)
+// without a PO token — the ios/android/android_vr GVS URLs 403 after the initial
+// CDN burst. Requires visitorData in the player request context.
+constexpr const char* kVisionOsUserAgent =
+    "com.google.ios.youtube/1.02 (RealityDevice17,1; U; CPU visionOS 26_5 like Mac OS X)";
 constexpr const char* kWebUserAgent =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 constexpr const char* kYoutubeOriginHeader = "Origin: https://www.youtube.com";
@@ -119,7 +129,9 @@ std::optional<json> pick_preferred_format(const json& formats, int preferred_hei
         }
 
         const int itag = format.value("itag", -1);
-        if (itag == 22) {
+        if (itag == 22 && preferred_height >= 720) {
+            // itag 22 is the 720p progressive muxed stream; only short-circuit to
+            // it when the caller actually wants 720p or higher.
             return format;
         }
 
@@ -325,7 +337,6 @@ std::optional<json> fetch_player_response(
     return root;
 }
 
-#ifdef __SWITCH__
 std::string generate_web_visitor_id() {
     constexpr char kVisitorAlphabet[] =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
@@ -380,7 +391,6 @@ std::string fetch_web_visitor_data(HttpClient* client, std::string& error_messag
     error_message = "YouTube WEB visitorData missing";
     return {};
 }
-#endif
 
 std::vector<HttpHeader> android_player_headers(const std::string& cookie = {}) {
     std::vector<HttpHeader> headers = {
@@ -407,9 +417,9 @@ std::vector<HttpHeader> android_vr_player_headers() {
     };
 }
 
-void enable_ump(ResolvedPlayback& playback) {
+void enable_ump(ResolvedPlayback& playback, int height) {
     playback.use_ump = true;
-    playback.quality_label = "720p AVC UMP";
+    playback.quality_label = std::to_string(height > 0 ? height : 720) + "p AVC UMP";
 }
 #endif
 
@@ -557,6 +567,7 @@ std::optional<MediaEntry> pick_preferred_media_entry(
 struct SelectedHlsPlayback {
     std::string video_url;
     std::string audio_url;
+    std::string audio_language;
     int bitrate = 0;
     int selected_height = -1;
 };
@@ -650,14 +661,17 @@ std::optional<SelectedHlsPlayback> pick_preferred_hls_playback(
         selected_audio_entry = pick_preferred_media_entry(media_entries, selected_audio_group, "AUDIO");
         if (selected_audio_entry.has_value()) {
             result.audio_url = selected_audio_entry->uri;
+            result.audio_language = selected_audio_entry->language;
         }
     }
     return result;
 }
 
-std::optional<ResolvedPlayback> resolve_ios_hls_playback(
+
+std::optional<ResolvedPlayback> resolve_visionos_hls_playback(
     HttpClient* client,
     const std::string& video_id,
+    const std::string& visitor_data,
     int preferred_height,
     std::string& error_message) {
     const int requested_height = preferred_height;
@@ -665,18 +679,21 @@ std::optional<ResolvedPlayback> resolve_ios_hls_playback(
         client,
         video_id,
         {
-            {"clientName", "IOS"},
-            {"clientVersion", "20.10.4"},
+            {"clientName", "VISIONOS"},
+            {"clientVersion", "1.02"},
             {"deviceMake", "Apple"},
-            {"deviceModel", "iPhone16,2"},
+            {"deviceModel", "RealityDevice17,1"},
+            {"osName", "visionOS"},
+            {"osVersion", "26.5.23O471"},
             {"hl", "en"},
             {"gl", "US"},
+            {"visitorData", visitor_data},
         },
         {
             {"Content-Type", "application/json"},
-            {"User-Agent", kIosUserAgent},
-            {"X-Youtube-Client-Name", "5"},
-            {"X-Youtube-Client-Version", "20.10.4"},
+            {"User-Agent", kVisionOsUserAgent},
+            {"X-Youtube-Client-Name", "101"},
+            {"X-Youtube-Client-Version", "1.02"},
             {"Origin", "https://www.youtube.com"},
         },
         error_message);
@@ -687,13 +704,13 @@ std::optional<ResolvedPlayback> resolve_ios_hls_playback(
     const json streaming = root->value("streamingData", json::object());
     const std::string hls_manifest_url = get_string(streaming, "hlsManifestUrl");
     if (hls_manifest_url.empty()) {
-        error_message = "iOS HLS manifest unavailable";
+        error_message = "visionOS HLS manifest unavailable";
         return std::nullopt;
     }
 
     const auto master_manifest = client->get(hls_manifest_url);
     if (!master_manifest.has_value() || master_manifest->empty()) {
-        error_message = "iOS HLS manifest download failed";
+        error_message = "visionOS HLS manifest download failed";
         return std::nullopt;
     }
 
@@ -709,6 +726,10 @@ std::optional<ResolvedPlayback> resolve_ios_hls_playback(
     result.referer = "https://www.youtube.com/watch?v=" + video_id;
     result.http_header_fields = kYoutubeOriginHeader;
     result.hls_bitrate = selected_playback->bitrate;
+    // The visionOS HLS master lists several audio renditions (incl. YouTube AI
+    // "dubbed-auto" tracks) with none marked DEFAULT, so mpv otherwise picks the
+    // dub or silence. Steer mpv to the original-language rendition via --alang.
+    result.audio_language = selected_playback->audio_language;
     const int selected_height =
         selected_playback->selected_height > 0 ? selected_playback->selected_height : requested_height;
     result.quality_label = std::to_string(selected_height) + "p HLS";
@@ -727,6 +748,24 @@ void report_status(const ResolverStatusCallback& callback, const std::string& ti
 }
 
 }  // namespace
+
+int preferred_height_for_quality(PlaybackQualityMode mode) {
+    switch (mode) {
+        case PlaybackQualityMode::HD_1080:
+            return 1080;
+        case PlaybackQualityMode::HD_720:
+            return 720;
+        case PlaybackQualityMode::LOW_320:
+            return 360;
+        case PlaybackQualityMode::BEST:
+        default:
+#ifdef __SWITCH__
+            return appletGetOperationMode() == AppletOperationMode_Console ? 1080 : 720;
+#else
+            return 1080;
+#endif
+    }
+}
 
 YouTubeResolver::YouTubeResolver(HttpClient* client)
     : client_(client ? client : &owned_client_),
@@ -771,12 +810,15 @@ std::optional<ResolvedPlayback> YouTubeResolver::resolve_internal(
 
     report_status(on_status, "RESOLVING YOUTUBE STREAM", "CONTACTING PLAYER API");
     const AppSettings settings = SettingsStore::instance().settings();
-    const int preferred_height =
-        settings.playback_quality == PlaybackQualityMode::DATA_SAVER ? 480 : 720;
-    const bool prefer_progressive_first =
-        settings.playback_quality == PlaybackQualityMode::COMPATIBILITY;
-    const bool allow_adaptive_720 =
-        settings.playback_quality == PlaybackQualityMode::STANDARD_720;
+    const int preferred_height = preferred_height_for_quality(settings.playback_quality);
+    // Low quality (<=360p) is served most reliably by the muxed progressive
+    // stream (itag 18), which is small and throttle-free. Higher qualities go
+    // through the adaptive/HLS path so we can reach 720p and 1080p.
+    const bool prefer_progressive_first = preferred_height <= 360;
+    const bool allow_adaptive = preferred_height >= 720;
+    logf("youtube: quality mode=%d preferred_height=%d",
+         static_cast<int>(settings.playback_quality),
+         preferred_height);
 
     const auto root = fetch_player_response(
         client_,
@@ -804,42 +846,50 @@ std::optional<ResolvedPlayback> YouTubeResolver::resolve_internal(
         return progressive_playback;
     }
 
-    if (allow_adaptive_720) {
+    if (allow_adaptive) {
         const auto adaptive_playback =
-            build_adaptive_split_playback(streaming.value("adaptiveFormats", json::array()), *video_id, 720);
-        report_status(on_status, "RESOLVING YOUTUBE STREAM", "REQUESTING 720P HLS STREAM");
-        std::string ios_error;
-        if (const auto ios_playback =
-                resolve_ios_hls_playback(client_, *video_id, 720, ios_error)) {
-            auto result = *ios_playback;
-            // Fallback: progressive (ratebypass=yes, no throttle) > adaptive (throttled)
-            if (progressive_playback.has_value()) {
-                result.fallback_stream_url = progressive_playback->stream_url;
-                result.fallback_referer = progressive_playback->referer;
-                result.fallback_http_header_fields = progressive_playback->http_header_fields;
-                result.fallback_quality_label = progressive_playback->quality_label;
-            } else if (adaptive_playback.has_value()) {
-                result.fallback_stream_url = adaptive_playback->stream_url;
-                result.fallback_referer = adaptive_playback->referer;
-                result.fallback_http_header_fields = adaptive_playback->http_header_fields;
-                result.fallback_quality_label = adaptive_playback->quality_label;
-                result.fallback_external_audio_url = adaptive_playback->external_audio_url;
+            build_adaptive_split_playback(
+                streaming.value("adaptiveFormats", json::array()), *video_id, preferred_height);
+
+        // visitorData unlocks the Apple Vision Pro (visionOS) player response,
+        // which is currently the only client that yields full-length 720p/1080p
+        // streams without a PO token. Fetched once and reused by the UMP path.
+        std::string visitor_error;
+        const std::string visitor_data = fetch_web_visitor_data(client_, visitor_error);
+
+        report_status(on_status, "RESOLVING YOUTUBE STREAM", "REQUESTING HLS STREAM");
+        std::string vision_error;
+        if (!visitor_data.empty()) {
+            if (const auto vision_playback = resolve_visionos_hls_playback(
+                    client_, *video_id, visitor_data, preferred_height, vision_error)) {
+                auto result = *vision_playback;
+                // Fallback: progressive (ratebypass=yes, no throttle) > adaptive.
+                if (progressive_playback.has_value()) {
+                    result.fallback_stream_url = progressive_playback->stream_url;
+                    result.fallback_referer = progressive_playback->referer;
+                    result.fallback_http_header_fields = progressive_playback->http_header_fields;
+                    result.fallback_quality_label = progressive_playback->quality_label;
+                } else if (adaptive_playback.has_value()) {
+                    result.fallback_stream_url = adaptive_playback->stream_url;
+                    result.fallback_referer = adaptive_playback->referer;
+                    result.fallback_http_header_fields = adaptive_playback->http_header_fields;
+                    result.fallback_quality_label = adaptive_playback->quality_label;
+                    result.fallback_external_audio_url = adaptive_playback->external_audio_url;
+                }
+                return result;
             }
-            return result;
         }
-        logf("youtube: iOS 720p HLS fallback failed video=%s error=%s",
+        logf("youtube: visionOS %dp HLS unavailable video=%s error=%s",
+             preferred_height,
              video_id->c_str(),
-             ios_error.c_str());
+             visitor_data.empty() ? visitor_error.c_str() : vision_error.c_str());
 
 #ifdef __SWITCH__
-        // A normal GET of an adaptive format is cut off after the initial CDN
-        // burst. Android VR direct URLs do not require a PoToken when fetched
-        // as UMP: POST the tiny UMP request body for each range and unwrap the
-        // MEDIA parts. This avoids the system WebApplet entirely.
+        // Legacy tokenless Android VR UMP path (kept as a last resort; YouTube now
+        // 403s these beyond the initial burst, so it rarely helps).
         std::string ump_error;
-        const std::string visitor_data = fetch_web_visitor_data(client_, ump_error);
         if (!visitor_data.empty() && adaptive_playback.has_value()) {
-            report_status(on_status, "RESOLVING YOUTUBE STREAM", "REQUESTING 720P UMP STREAM");
+            report_status(on_status, "RESOLVING YOUTUBE STREAM", "REQUESTING UMP STREAM");
             json vr_client = {
                 {"clientName", "ANDROID_VR"},
                 {"clientVersion", "1.65.10"},
@@ -862,9 +912,9 @@ std::optional<ResolvedPlayback> YouTubeResolver::resolve_internal(
                 auto ump_playback = build_adaptive_split_playback(
                     vr_streaming.value("adaptiveFormats", json::array()),
                     *video_id,
-                    720);
+                    preferred_height);
                 if (ump_playback.has_value()) {
-                    enable_ump(*ump_playback);
+                    enable_ump(*ump_playback, preferred_height);
                     if (progressive_playback.has_value()) {
                         ump_playback->fallback_stream_url = progressive_playback->stream_url;
                         ump_playback->fallback_referer = progressive_playback->referer;
@@ -874,7 +924,8 @@ std::optional<ResolvedPlayback> YouTubeResolver::resolve_internal(
                     logf("youtube: selected tokenless Android VR UMP video=%s", video_id->c_str());
                     return *ump_playback;
                 }
-                ump_error = "Android VR response did not contain 720p split formats";
+                ump_error = "Android VR response did not contain "
+                    + std::to_string(preferred_height) + "p split formats";
             }
             logf("youtube: tokenless UMP path unavailable video=%s error=%s",
                  video_id->c_str(), ump_error.c_str());
@@ -898,7 +949,7 @@ std::optional<ResolvedPlayback> YouTubeResolver::resolve_internal(
         }
 
         if (adaptive_playback.has_value()) {
-            report_status(on_status, "RESOLVING YOUTUBE STREAM", "REQUESTING 720P AVC STREAM");
+            report_status(on_status, "RESOLVING YOUTUBE STREAM", "REQUESTING AVC STREAM");
             return *adaptive_playback;
         }
     }
@@ -908,13 +959,14 @@ std::optional<ResolvedPlayback> YouTubeResolver::resolve_internal(
     }
 
     const std::string dash_manifest_url = get_string(streaming, "dashManifestUrl");
-    if (allow_adaptive_720
+    if (allow_adaptive
         && !dash_manifest_url.empty()
-        && has_preferred_adaptive_mp4(streaming.value("adaptiveFormats", json::array()), 720)) {
+        && has_preferred_adaptive_mp4(
+               streaming.value("adaptiveFormats", json::array()), preferred_height)) {
         ResolvedPlayback result;
         result.stream_url = dash_manifest_url;
         result.referer = "https://www.youtube.com/watch?v=" + *video_id;
-        result.quality_label = "720p DASH";
+        result.quality_label = std::to_string(preferred_height) + "p DASH";
         return result;
     }
 

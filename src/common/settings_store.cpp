@@ -71,14 +71,16 @@ std::string sanitize_home_kiosk(std::string value) {
 
 PlaybackQualityMode sanitize_playback_quality(int value) {
     switch (value) {
-        case static_cast<int>(PlaybackQualityMode::STANDARD_720):
-            return PlaybackQualityMode::STANDARD_720;
-        case static_cast<int>(PlaybackQualityMode::COMPATIBILITY):
-            return PlaybackQualityMode::COMPATIBILITY;
-        case static_cast<int>(PlaybackQualityMode::DATA_SAVER):
-            return PlaybackQualityMode::DATA_SAVER;
+        case static_cast<int>(PlaybackQualityMode::BEST):
+            return PlaybackQualityMode::BEST;
+        case static_cast<int>(PlaybackQualityMode::HD_1080):
+            return PlaybackQualityMode::HD_1080;
+        case static_cast<int>(PlaybackQualityMode::HD_720):
+            return PlaybackQualityMode::HD_720;
+        case static_cast<int>(PlaybackQualityMode::LOW_320):
+            return PlaybackQualityMode::LOW_320;
         default:
-            return PlaybackQualityMode::STANDARD_720;
+            return PlaybackQualityMode::BEST;
     }
 }
 

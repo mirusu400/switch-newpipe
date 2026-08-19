@@ -104,9 +104,10 @@
       "save_failed": "Failed to save playback quality",
       "saved": "Saved playback quality",
       "options": {
-        "standard": "Standard 720p",
-        "compatibility": "Compatibility First",
-        "data_saver": "Data Saver"
+        "best": "Best (docked 1080p / handheld 720p)",
+        "hd_1080": "1080p",
+        "hd_720": "720p",
+        "low_320": "320p"
       }
     },
     "startup_tab": {
@@ -225,7 +226,7 @@
       "initial_buffer_ready": "INITIAL BUFFER READY",
       "download_complete": "DOWNLOAD COMPLETE",
       "attaching_audio_track": "ATTACHING AUDIO TRACK",
-      "stream_720_failed": "720P STREAM FAILED",
+      "stream_720_failed": "PRIMARY STREAM FAILED",
       "fallback_safe_stream": "FALLING BACK TO SAFE STREAM",
       "playback_started": "PLAYBACK STARTED",
       "video_frame_ready": "VIDEO FRAME READY",
@@ -236,10 +237,10 @@
       "resolving_youtube_stream": "RESOLVING YOUTUBE STREAM",
       "contacting_player_api": "CONTACTING PLAYER API",
       "selecting_playable_format": "SELECTING PLAYABLE FORMAT",
-      "requesting_720p_hls_stream": "REQUESTING 720P HLS STREAM",
-      "requesting_720p_avc_stream": "REQUESTING 720P AVC STREAM",
+      "requesting_hls_stream": "REQUESTING HLS STREAM",
+      "requesting_avc_stream": "REQUESTING AVC STREAM",
       "requesting_progressive_stream": "REQUESTING PROGRESSIVE STREAM",
-      "requesting_720p_ump_stream": "REQUESTING 720P UMP STREAM"
+      "requesting_ump_stream": "REQUESTING UMP STREAM"
     }
   },
   "stream": {
